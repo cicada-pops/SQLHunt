@@ -1,0 +1,307 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 245, 233, 209;
+  --scroll-duration: 300ms;
+  --scroll-timing-function: ease-out;
+  
+  --hover-transition-duration: 0.2s;
+  --hover-transition-timing: ease-out;
+}
+
+html {
+  scroll-behavior: smooth;
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  * {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: url('/images/background.webp');
+  background-size: cover;
+  background-attachment: fixed;
+  position: relative;
+  background-color: rgb(245, 233, 209);
+  will-change: auto;
+}
+
+main {
+  position: relative;
+  z-index: 3;
+  background-color: transparent;
+}
+
+.bg-transparent {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+}
+
+body {
+  font-family: 'Times New Roman', Times, serif, sans-serif;
+}
+
+a, button {
+  transition-property: transform, opacity, color, background-color, border-color;
+  transition-duration: var(--hover-transition-duration);
+  transition-timing-function: var(--hover-transition-timing);
+}
+
+.responsive-title {
+  letter-spacing: 0.01em;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes expandCard {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes collapseCard {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+}
+
+/* Анимация курсора печатной машинки */
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.typing-cursor {
+  display: inline-block;
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+  font-weight: 900;
+  font-size: 1em;
+  position: relative;
+  color: black;
+  vertical-align: baseline;
+}
+
+@media (min-width: 640px) {
+  .responsive-title {
+    letter-spacing: 0.02em;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-title {
+    letter-spacing: 0.03em;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-title {
+    letter-spacing: 0.04em;
+  }
+}
+
+@media (min-width: 1280px) {
+  .responsive-title {
+    letter-spacing: 0.05em;
+  }
+}
+
+@media (min-width: 1536px) {
+  .responsive-title {
+    letter-spacing: 0.06em;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-blackletter);
+  }
+}
+
+.custom-title-size {
+  font-size: 7rem;
+}
+
+@media (min-width: 640px) {
+  .custom-title-size {
+    font-size: 8rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .custom-title-size {
+    font-size: 9rem;
+  }
+}
+
+.responsive-heading {
+  font-size: clamp(3rem, 8vw, 9rem);
+}
+
+.font-serif {
+  font-family: 'Times New Roman', Times, serif;
+}
+
+.border-t-1 {
+  border-top-width: 1px;
+}
+
+.border-t-5 {
+  border-top-width: 5px;
+}
+
+.border-b-5 {
+  border-bottom-width: 5px;
+}
+
+/* SQL textarea placeholder стили */
+.sql-textarea::placeholder {
+  color: #B2B2B2;
+  opacity: 1;
+}
+
+.sql-textarea::-webkit-input-placeholder {
+  color: #B2B2B2;
+  opacity: 1;
+}
+
+.sql-textarea::-moz-placeholder {
+  color: #B2B2B2;
+  opacity: 1;
+}
+
+.sql-textarea:-ms-input-placeholder {
+  color: #B2B2B2;
+  opacity: 1;
+}
+
