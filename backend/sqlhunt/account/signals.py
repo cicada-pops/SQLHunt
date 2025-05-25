@@ -1,8 +1,10 @@
-from django.db import transaction, IntegrityError
-from django.db.models.signals import post_save, post_delete
+from django.db import IntegrityError, transaction
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
-from account.models import Profile
 from users.models import User
+
+from .models import Profile
+
 
 @receiver(post_save, sender=Profile)
 def create_user_on_profile_creation(sender, instance, created, **kwargs):

@@ -2,7 +2,7 @@ from datetime import date
 from django.test import TestCase
 from .models import Person, Case, Suspect, Article, Charge, Alibi, Statement, CrimeScene, Evidence
 from django.core.exceptions import ValidationError
-from datetime import date, timedelta
+from datetime import timedelta
 
 
 class PersonModelTest(TestCase):

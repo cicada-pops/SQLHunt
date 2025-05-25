@@ -27,10 +27,11 @@
    ```
 
    ```psql
-   CREATE DATABASE users_db;
-   CREATE DATABASE investigations_db;
-   CREATE DATABASE auth_db;
    CREATE USER sqlhunt WITH PASSWORD 'your_password';
+   ALTER USER sqlhunt CREATEDB;
+   CREATE DATABASE users_db OWNER sqlhunt;
+   CREATE DATABASE investigations_db OWNER sqlhunt;
+   CREATE DATABASE auth_db OWNER sqlhunt;
    GRANT ALL PRIVILEGES ON DATABASE users_db TO sqlhunt;
    GRANT ALL PRIVILEGES ON DATABASE investigations_db TO sqlhunt;
    GRANT ALL PRIVILEGES ON DATABASE auth_db TO sqlhunt;
