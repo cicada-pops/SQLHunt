@@ -18,11 +18,12 @@
 
 ### Настройка базы данных PostgreSQL
 
-1. Убедитесь, что PostgreSQL установлен на вашем компьютере. Если нет, установите его, следуя инструкциям официального сайта PostgreSQL.
+1. Убедитесь, что PostgreSQL установлен на
+ вашем компьютере. Если нет, установите его, следуя инструкциям официального сайта PostgreSQL.
 2. Создайте 3 новые базы данных и пользователя:
 
    ```bash
-   sudo -u postgres psql
+   psql postgres 
    ```
 
    ```psql
@@ -33,6 +34,9 @@
    GRANT ALL PRIVILEGES ON DATABASE users_db TO sqlhunt;
    GRANT ALL PRIVILEGES ON DATABASE investigations_db TO sqlhunt;
    GRANT ALL PRIVILEGES ON DATABASE auth_db TO sqlhunt;
+   GRANT ALL ON SCHEMA public TO sqlhunt;
+   GRANT ALL ON SCHEMA public TO sqlhunt;
+   GRANT ALL ON SCHEMA public TO sqlhunt;
    exit
    ```
 
@@ -41,7 +45,7 @@
 1. Создайте и активируйте виртуальное окружение:
 
    ```bash
-   python -m venv .venv
+   python3 -m venv .venv
    source .venv/bin/activate 
    ```
 2. Установите зависимости:
