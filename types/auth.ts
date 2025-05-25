@@ -3,6 +3,7 @@ export interface User {
   username: string;
   email: string;
   registrationDate: string;
+  experience: number;
 }
 
 // Параметры аутентификации

@@ -1,0 +1,6 @@
+{
+    "reportMissingModuleSource": "none",
+    "extraPaths": [
+        ".venv/lib/python3.11/site-packages"
+    ]
+} 

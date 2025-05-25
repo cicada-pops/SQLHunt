@@ -159,19 +159,20 @@ export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
             </h1>
           </div>
           <div className="text-8xl flex items-center justify-center" style={{ fontFamily: "var(--font-chomsky)", lineHeight: "0", marginBottom: "-40px" }}>*</div>
-          <div className="w-1/4 text-center relative">
+          <div className="w-1/4 flex justify-center relative">
             {isAuthenticated ? (
               <>
-                <p 
-                  className="text-3xl italic font-serif cursor-pointer"
+                <span 
+                  className="text-3xl italic font-serif cursor-pointer hover:opacity-80"
                   onClick={handleProfileClick}
                 >
-                  {user?.username}
-                </p>
+                  PROFILE
+                </span>
                 {isProfilePopupOpen && (
                   <ProfilePopup 
                     username={user?.username || ''}
-                    registrationDate={user?.registrationDate || ''}
+                    email={user?.email || ''}
+                    experience={user?.experience || 0}
                     isOpen={isProfilePopupOpen}
                     onClose={() => setIsProfilePopupOpen(false)}
                     onLogout={handleLogout}
@@ -179,12 +180,12 @@ export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
                 )}
               </>
             ) : (
-              <p 
-                className="text-3xl italic font-serif cursor-pointer"
+              <span 
+                className="text-3xl italic font-serif cursor-pointer hover:opacity-80"
                 onClick={handleLoginClick}
               >
                 PROFILE
-              </p>
+              </span>
             )}
           </div>
         </div>
@@ -235,8 +236,6 @@ export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
       <AuthModal 
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onLogin={handleLogin}
-        onRegister={handleRegister}
       />
     </header>
   );

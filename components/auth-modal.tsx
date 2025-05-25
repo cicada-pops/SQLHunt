@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, MouseEvent as ReactMouseEvent } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
 import { X } from 'lucide-react';
+import authService from '../services/auth';
 
 // Глобальные стили для шрифтов
 const FontStyles = createGlobalStyle`
@@ -43,21 +44,35 @@ const FontStyles = createGlobalStyle`
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (email: string, password: string) => void;
-  onRegister: (username: string, email: string, password: string) => void;
+  onAuthSuccess?: () => void;  // New prop for handling successful auth
 }
 
-export function AuthModal({ isOpen, onClose, onLogin, onRegister }: AuthModalProps) {
+const ErrorMessage = styled.div`
+  color: #FF0000;
+  font-family: var(--font-rationalist-light);
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0;
+  text-align: center;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 15px;
+  padding: 2px 0;
+`;
+
+export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [password2, setPassword2] = useState('');
   const [error, setError] = useState('');
-  const [agreedToTerms, setAgreedToTerms] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [formDirection, setFormDirection] = useState<'left' | 'right'>('left');
   const [isAnimating, setIsAnimating] = useState(false);
   
-  // Используем ref для управления DOM-элементами напрямую
   const modalRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const formContentRef = useRef<HTMLFormElement>(null);
@@ -130,6 +145,7 @@ export function AuthModal({ isOpen, onClose, onLogin, onRegister }: AuthModalPro
         setUsername('');
         setEmail('');
         setPassword('');
+        setPassword2('');
         setError('');
         setIsLogin(true);
       }, 300);
@@ -192,27 +208,26 @@ export function AuthModal({ isOpen, onClose, onLogin, onRegister }: AuthModalPro
     }, 200);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
     
-    if (isLogin) {
-      // Ручная валидация полей вместо HTML-валидации
-      if (!email.trim() || !password.trim()) {
-        // НЕ показываем ошибку валидации - пусть это делает серверная валидация
-        return;
+    try {
+      if (isLogin) {
+        await authService.login({ username, password });
+      } else {
+        await authService.register({ username, email, password, password2 });
       }
-      
-      // Вызываем onLogin даже если поля пустые - валидация будет на стороне сервера
-      onLogin(email, password);
-    } else {
-      // Ручная валидация полей вместо HTML-валидации
-      if (!username.trim() || !email.trim() || !password.trim()) {
-        // НЕ показываем ошибку валидации - пусть это делает серверная валидация
-        return;
+      onClose();
+      if (onAuthSuccess) {
+        onAuthSuccess();
       }
-      
-      // Вызываем onRegister даже если поля пустые - валидация будет на стороне сервера
-      onRegister(username, email, password);
+      window.location.reload();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -254,18 +269,10 @@ export function AuthModal({ isOpen, onClose, onLogin, onRegister }: AuthModalPro
               </span>
             </div>
             
-            {/* Контейнер для ошибок (только для ошибки о согласии с условиями) */}
             {error && (
-              <div 
-                className="error-container" 
-                style={{ 
-                  color: 'red', 
-                  fontSize: '14px', 
-                  marginBottom: '10px'
-                }}
-              >
+              <ErrorMessage>
                 {error}
-              </div>
+              </ErrorMessage>
             )}
             
             {!isLogin && (
@@ -276,9 +283,11 @@ export function AuthModal({ isOpen, onClose, onLogin, onRegister }: AuthModalPro
                 className="input"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                required
               />
             )}
             
+            {!isLogin && (
             <input 
               type="email" 
               placeholder="Эл. почта" 
@@ -286,7 +295,21 @@ export function AuthModal({ isOpen, onClose, onLogin, onRegister }: AuthModalPro
               className="input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-            />
+                required
+              />
+            )}
+
+            {isLogin && (
+              <input 
+                type="text" 
+                placeholder="Псевдоним или эл. почта" 
+                name="username" 
+                className="input"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            )}
             
             <input 
               type="password" 
@@ -295,19 +318,28 @@ export function AuthModal({ isOpen, onClose, onLogin, onRegister }: AuthModalPro
               className="input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
+
+            {!isLogin && (
+              <input 
+                type="password" 
+                placeholder="Повторите пароль" 
+                name="password2" 
+                className="input"
+                value={password2}
+                onChange={(e) => setPassword2(e.target.value)}
+                required
+              />
+            )}
             
-            <div className="login-with">
-              <div className="button-log">
-                <svg className="icon" height="56.6934px" id="Layer_1" style={{background: 'new 0 0 56.6934 56.6934'}} version="1.1" viewBox="0 0 56.6934 56.6934" width="56.6934px" xmlSpace="preserve" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"><path d="M51.981,24.4812c-7.7173-0.0038-15.4346-0.0019-23.1518-0.001c0.001,3.2009-0.0038,6.4018,0.0019,9.6017  c4.4693-0.001,8.9386-0.0019,13.407,0c-0.5179,3.0673-2.3408,5.8723-4.9258,7.5991c-1.625,1.0926-3.492,1.8018-5.4168,2.139  c-1.9372,0.3306-3.9389,0.3729-5.8713-0.0183c-1.9651-0.3921-3.8409-1.2108-5.4773-2.3649  c-2.6166-1.8383-4.6135-4.5279-5.6388-7.5549c-1.0484-3.0788-1.0561-6.5046,0.0048-9.5805  c0.7361-2.1679,1.9613-4.1705,3.5708-5.8002c1.9853-2.0324,4.5664-3.4853,7.3473-4.0811c2.3812-0.5083,4.8921-0.4113,7.2234,0.294  c1.9815,0.6016,3.8082,1.6874,5.3044,3.1163c1.5125-1.5039,3.0173-3.0164,4.527-4.5231c0.7918-0.811,1.624-1.5865,2.3908-2.4196  c-2.2928-2.1218-4.9805-3.8274-7.9172-4.9056C32.0723,4.0363,26.1097,3.995,20.7871,5.8372  C14.7889,7.8907,9.6815,12.3763,6.8497,18.0459c-0.9859,1.9536-1.7057,4.0388-2.1381,6.1836  C3.6238,29.5732,4.382,35.2707,6.8468,40.1378c1.6019,3.1768,3.8985,6.001,6.6843,8.215c2.6282,2.0958,5.6916,3.6439,8.9396,4.5078  c4.0984,1.0993,8.461,1.0743,12.5864,0.1355c3.7284-0.8581,7.256-2.6397,10.0725-5.24c2.977-2.7358,5.1006-6.3403,6.2249-10.2138  C52.5807,33.3171,52.7498,28.8064,51.981,24.4812z" /></svg>
-              </div>
-              <div className="button-log">
-                <svg xmlnsXlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" width="56.693px" viewBox="0 0 56.693 56.693" version="1.1" id="Layer_1" height="56.693px" className="icon"><path d="M40.43,21.739h-7.645v-5.014c0-1.883,1.248-2.322,2.127-2.322c0.877,0,5.395,0,5.395,0V6.125l-7.43-0.029  c-8.248,0-10.125,6.174-10.125,10.125v5.518h-4.77v8.53h4.77c0,10.947,0,24.137,0,24.137h10.033c0,0,0-13.32,0-24.137h6.77  L40.43,21.739z" /></svg>
-              </div>
-            </div>
-            
-            <button type="submit" className="button-confirm">
-              {isLogin ? 'Войти →' : 'Регистрация →'}
+            <button 
+              type="submit" 
+              className="button-confirm"
+              disabled={isLoading}
+              style={{ opacity: isLoading ? 0.7 : 1 }}
+            >
+              {isLoading ? 'Загрузка...' : isLogin ? 'Войти →' : 'Регистрация →'}
             </button>
             
             <div style={{ textAlign: 'center', marginTop: '0px' }}>

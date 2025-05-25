@@ -1,17 +1,19 @@
 import { useRef, useEffect } from 'react';
+import { LogOut } from 'lucide-react';
 
 interface ProfilePopupProps {
   username: string;
-  registrationDate: string;
+  email: string;
+  experience: number;
   isOpen: boolean;
   onClose: () => void;
   onLogout: () => void;
 }
 
-export function ProfilePopup({ username, registrationDate, isOpen, onClose, onLogout }: ProfilePopupProps) {
+export function ProfilePopup({ username, email, experience, isOpen, onClose, onLogout }: ProfilePopupProps) {
   const popupRef = useRef<HTMLDivElement>(null);
 
-  // Закрытие при клике вне попапа
+  // Закрытие при клике вне
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
@@ -30,16 +32,10 @@ export function ProfilePopup({ username, registrationDate, isOpen, onClose, onLo
 
   if (!isOpen) return null;
 
-  const formattedDate = new Date(registrationDate).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
-
   return (
     <div 
       ref={popupRef}
-      className="absolute top-12 right-0 border-2 border-black bg-white p-4 w-64 shadow-md"
+      className="absolute top-12 left-1/2 -translate-x-1/2 border-[1px] border-black bg-white p-4 w-64 shadow-md z-50"
       style={{ fontFamily: "var(--font-rationalist-light)" }}
     >
       <div className="mb-3">
@@ -48,18 +44,31 @@ export function ProfilePopup({ username, registrationDate, isOpen, onClose, onLo
         </h3>
       </div>
       
+      <hr className="border-t-[1px] border-black -mx-4 mb-4" />
+      
       <div className="mb-4 text-sm">
+        <p className="text-gray-700 mb-2">
+          Email: {email}
+        </p>
         <p className="text-gray-700">
-          Дата регистрации: {formattedDate}
+          Опыт: {experience} XP
         </p>
       </div>
       
-      <div className="flex justify-end">
+      <hr className="border-t-[1px] border-black -mx-4 mb-4" />
+      
+      <div className="flex justify-end items-center">
         <button 
-          onClick={onLogout}
-          className="px-3 py-1 bg-black text-white text-sm"
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onLogout();
+          }}
+          className="text-sm text-gray-700 hover:text-black flex items-center gap-2 transition-colors cursor-pointer group"
+          style={{ fontFamily: "var(--font-rationalist-demibold)" }}
         >
-          Выйти
+          <LogOut className="group-hover:text-black transition-colors" size={16} />
+          <span>Выйти</span>
         </button>
       </div>
     </div>
