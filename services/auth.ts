@@ -171,20 +171,12 @@ const authService = {
 
   async logout(): Promise<void> {
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await axios.post(`${API_URL}/logout/`, null, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
+      // Очищаем локальное хранилище
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   },
 

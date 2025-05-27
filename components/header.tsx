@@ -46,8 +46,6 @@ export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
   });
 
   useEffect(() => {
-    console.log("Typing effect initialized"); // Отладочный вывод
-
     // Функция эффекта печатной машинки
     const typeEffect = () => {
       const state = stateRef.current;
@@ -58,26 +56,22 @@ export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
         const newText = currentTitle.substring(0, state.charIndex - 1);
         setTypedText(newText);
         state.charIndex--;
-        console.log(`Deleting: ${newText}, charIndex: ${state.charIndex}`); // Отладка
         
         // Когда текст полностью удален, переключаемся на печать
         if (state.charIndex <= 0) {
           state.isDeleting = false;
           state.titleIndex = (state.titleIndex + 1) % titles.length;
           state.charIndex = 0;
-          console.log(`Switching to title index: ${state.titleIndex}`); // Отладка
         }
       } 
       // Если мы в паузе (после завершения печати текста)
       else if (state.charIndex >= currentTitle.length) {
         state.pauseCount++;
-        console.log(`Pausing: ${state.pauseCount}/20`); // Отладка
         
         // После паузы начинаем удаление
         if (state.pauseCount >= 20) {
           state.isDeleting = true;
           state.pauseCount = 0;
-          console.log("Starting to delete"); // Отладка
         }
       }
       // Если мы печатаем текст
@@ -85,7 +79,6 @@ export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
         const newText = currentTitle.substring(0, state.charIndex + 1);
         setTypedText(newText);
         state.charIndex++;
-        console.log(`Typing: ${newText}, charIndex: ${state.charIndex}`); // Отладка
       }
       
       // Определяем скорость печати
@@ -103,7 +96,6 @@ export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
     return () => {
       if (typingRef.current) {
         window.clearTimeout(typingRef.current);
-        console.log("Typing effect cleaned up"); // Отладка
       }
     };
   }, []); // Пустой массив зависимостей означает, что эффект запустится только при монтировании
