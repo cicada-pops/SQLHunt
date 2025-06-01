@@ -1,6 +1,6 @@
-from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
+from django.db import models
 
 
 class TimeStampedModel(models.Model):
@@ -18,7 +18,7 @@ class User(TimeStampedModel):
     def __str__(self):
         return f"User {self.pk}"
     
-    class Meta:
+    class Meta:  # type: ignore
         managed = True
         app_label = 'users'
 
@@ -27,6 +27,7 @@ class Case(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
     required_xp = models.IntegerField(validators=[MinValueValidator(0)])
+    answer = models.CharField(max_length=50)
 
     def __str__(self):
         return f"Case {self.pk}: {self.title}"
@@ -49,7 +50,7 @@ class AvailableTable(models.Model):
         return f"Table {self.table} for Case {self.case.pk}"
 
 
-class UserProgress(models.Model):
+class UserProgress(TimeStampedModel):
     CASE_STATUS = [
     ('не начато', 'Не начато'),
     ('в процессе', 'В процессе'),
@@ -61,7 +62,7 @@ class UserProgress(models.Model):
     status = models.CharField(max_length=20, choices=CASE_STATUS, default='не начато')
     answers = models.JSONField(default=dict)
 
-    class Meta:
+    class Meta: # type: ignore
         app_label = 'users'
         unique_together = ('user', 'case')
         managed = True

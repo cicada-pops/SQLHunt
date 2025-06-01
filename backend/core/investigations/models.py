@@ -1,9 +1,10 @@
+from datetime import timedelta
+
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
-from django.utils import timezone
-from datetime import timedelta
 from django.db.models import Q
+from django.utils import timezone
 
 
 class Person(models.Model):
@@ -98,6 +99,7 @@ class Suspect(models.Model):
         ('в розыске', 'В розыске'),
         ('арестован', 'Арестован'),
         ('освобожден', 'Освобожден'),
+        ('на свободе', 'на свободе'),
         ('выпущен под залог', 'Выпущен под залог'),
     ]
     
@@ -119,6 +121,7 @@ class Suspect(models.Model):
 
 
 class Article(models.Model):
+    id = models.IntegerField(primary_key=True)
     description = models.TextField()
     
     class Meta:
@@ -164,7 +167,7 @@ class Charge(models.Model):
 class Alibi(models.Model):
     ALIBI_STATUS = [
         ('подтверждено', 'Подтверждено'),
-        ('неподтверждено', 'Неподтверждено'),
+        ('не подтверждено', 'Не подтверждено'),
         ('ложное', 'Ложное'),
     ]
 
@@ -190,11 +193,11 @@ class Statement(models.Model):
     alibi = models.ForeignKey(Alibi, on_delete=models.CASCADE)
     person = models.ForeignKey(Person, on_delete=models.CASCADE)
     statement = models.TextField()
-    date_statement = models.DateField()
+    date_of_statement = models.DateField()
 
     def clean(self):
         super().clean()
-        if self.date_statement > timezone.now().date():
+        if self.date_of_statement > timezone.now().date():
             raise ValidationError("The statement date cannot be in the future.")
         
     class Meta:
