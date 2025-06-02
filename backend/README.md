@@ -3,15 +3,16 @@
 ## Структура проекта
 
 ```
-/backend/ 
-├── .env 
+/backend/
+├── README.md
 ├── requirements.txt
-└── sqlhunt/ (Django Application Directory)
-    ├── config/ (Django Settings)
-    ├── users/ (User Management)
-    ├── investigations/ (Cases and Investigations)
-    ├── account/ (Authentication and Authorization)
-    └── manage.py
+├── manage.py
+└── core/
+    ├── config/           # Django settings, urls, wsgi/asgi
+    ├── account/          # Аутентификация и шаблоны
+    ├── users/            # Пользователи и сигналы
+    ├── investigations/   # Учебная БД и команды генерации
+    └── services/         # Генератор данных
 ```
 
 ## Начало работы
@@ -67,12 +68,17 @@
    python3 manage.py migrate --database=investigations
    ```
    Примечание: Так как база данных default пуста, то при каждом запуске migrate необходимо вручную указывать имя базы данных.
-5. Создайте суперпользователя:
+
+5. Сгенерируйте данные 
+    ```
+    python3 manage.py generate_investigations_data
+    ```
+6. Создайте суперпользователя:
 
    ```bash
    python3 manage.py createsuperuser --database=auth
    ```
-6. Запустите сервер разработки:
+7. Запустите сервер разработки:
 
    ```bash
    python3 manage.py runserver_plus --cert-file cert.crt

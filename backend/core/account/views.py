@@ -1,21 +1,22 @@
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render, redirect
+import logging
+
+from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
-import logging
-from .models import Profile
-from .forms import LoginForm, UserRegistrationForm, UserEditForm, ProfileEditForm
-from .serializers import UserRegistrationSerializer, UserSerializer
-from django.middleware.csrf import get_token
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 from users.models import User as UserXP
+
+from .forms import LoginForm, ProfileEditForm, UserEditForm, UserRegistrationForm
+from .models import Profile
+from .serializers import UserRegistrationSerializer, UserSerializer
 
 logger = logging.getLogger(__name__)
 
