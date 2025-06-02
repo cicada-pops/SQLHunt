@@ -3,11 +3,6 @@ import os
 import random
 from datetime import datetime, timedelta
 
-# import django
-
-# os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-# django.setup()
-
 from django.utils import timezone
 from faker import Faker
 from investigations.models import (
@@ -297,10 +292,5 @@ class InvestigationsDataGenerator:
         self.generate_statements(count=statements)
         self.generate_crime_scenes()
         self.generate_evidence()
-
-if __name__ == "__main__":
-    generator = InvestigationsDataGenerator()
-    generator.run()
-    
     
       
