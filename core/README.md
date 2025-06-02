@@ -3,16 +3,14 @@
 ## Структура проекта
 
 ```
-/backend/
+/core/
 ├── README.md
-├── requirements.txt
 ├── manage.py
-└── core/
-    ├── config/           # Django settings, urls, wsgi/asgi
-    ├── account/          # Аутентификация и шаблоны
-    ├── users/            # Пользователи и сигналы
-    ├── investigations/   # Учебная БД и команды генерации
-    └── services/         # Генератор данных
+├── config/           # Django settings, urls, wsgi/asgi
+├── account/          # Аутентификация и шаблоны
+├── users/            # Пользователи и сигналы
+├── investigations/   # Учебная БД и команды генерации
+└── services/         # Генератор данных
 ```
 
 ## Начало работы
@@ -81,6 +79,6 @@
 7. Запустите сервер разработки:
 
    ```bash
-   python3 manage.py runserver_plus --cert-file cert.crt
+   python3 manage.py runserver_plus sqlhunt.com:8000 --cert-file cert.crt
    ```
    Примечание: Мы указали команде runserver_plus имя файла SSL/TLS-сертификата. Django Extensions автоматически сгенерирует ключ и сертификат. Пройдите по URL-адресу [https://sqlhunt.com:8000/](https://sqlhunt.com:8000/)
