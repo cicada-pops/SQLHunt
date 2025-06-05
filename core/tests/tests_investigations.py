@@ -2,9 +2,7 @@ from datetime import date, timedelta
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from users.models import Case
-
-from .models import (
+from investigations.models import (
     Alibi,
     Article,
     Case,
@@ -87,7 +85,7 @@ class ChargeModelTest(TestCase):
         case = Case.objects.create(
             description="Test case", date_opened=date(2023, 1, 1), date_closed=None, type='убийство', status='открыто'
         )
-        article = Article.objects.create(description="Test article")
+        article = Article.objects.create(id=1, description="Test article")
         suspect = Suspect.objects.create(person=person, status='в розыске')
         suspect.cases.add(case)
         charge = Charge.objects.create(
@@ -101,7 +99,7 @@ class ChargeModelTest(TestCase):
         case = Case.objects.create(
             description="Test case", date_opened=date.today() + timedelta(days=1), date_closed=None, type='убийство', status='открыто'
         )
-        article = Article.objects.create(description="Test article")
+        article = Article.objects.create(id=1, description="Test article")
         suspect = Suspect.objects.create(person=person, status='в розыске')
         suspect.cases.add(case)
         charge = Charge.objects.create(
@@ -147,7 +145,7 @@ class StatementModelTest(TestCase):
         suspect = Suspect.objects.create(person=person, status='в розыске')
         suspect.cases.add(case)
         alibi = Alibi.objects.create(status='подтверждено', case=case, description="Test description", suspect=suspect)
-        statement = Statement.objects.create(alibi=alibi, person=person, statement="Test statement", date_statement=date(2023, 1, 1))
+        statement = Statement.objects.create(alibi=alibi, person=person, statement="Test statement", date_of_statement=date(2023, 1, 1))
         statement.clean()
         statement.save()
 
@@ -159,7 +157,7 @@ class StatementModelTest(TestCase):
         suspect = Suspect.objects.create(person=person, status='в розыске')
         suspect.cases.add(case)
         alibi = Alibi.objects.create(status='подтверждено', case=case, description="Test description", suspect=suspect)
-        statement = Statement.objects.create(alibi=alibi, person=person, statement="Test statement", date_statement=date.today() + timedelta(days=1))
+        statement = Statement.objects.create(alibi=alibi, person=person, statement="Test statement", date_of_statement=date.today() + timedelta(days=1))
         with self.assertRaises(ValidationError):
             statement.clean()
 
@@ -204,3 +202,4 @@ class EvidenceModelTest(TestCase):
         evidence = Evidence.objects.create(type='физическое', description="Test description", date=date.today() + timedelta(days=1), scene=crime_scene)
         with self.assertRaises(ValidationError):
             evidence.clean()
+
