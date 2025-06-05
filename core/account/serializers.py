@@ -19,7 +19,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'password2': {'required': True},
         }
 
-    def validate(self, data):
+    def validate(self, data): # type: ignore
         logger.info(f"Validating registration data for username: {data.get('username')}")
         
         # Validate passwords match

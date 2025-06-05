@@ -1,8 +1,20 @@
-from datetime import date
-from django.test import TestCase
-from .models import Person, Case, Suspect, Article, Charge, Alibi, Statement, CrimeScene, Evidence
+from datetime import date, timedelta
+
 from django.core.exceptions import ValidationError
-from datetime import timedelta
+from django.test import TestCase
+from users.models import Case
+
+from .models import (
+    Alibi,
+    Article,
+    Case,
+    Charge,
+    CrimeScene,
+    Evidence,
+    Person,
+    Statement,
+    Suspect,
+)
 
 
 class PersonModelTest(TestCase):

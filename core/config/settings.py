@@ -30,7 +30,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['sqlhunt.com', 'localhost', '127.0.0.1', '*']
+ALLOWED_HOSTS = ['sqlhunt.com', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'users',          
@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -94,7 +95,7 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://sqlhunt.com:3000",
+    "http://sqlhunt.com:8000",
 ]
 
 CSRF_COOKIE_SAMESITE = None  # Changed from 'Lax' to None
@@ -108,6 +109,11 @@ CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
 SESSION_COOKIE_SAMESITE = None  # Changed from 'Lax' to None
 SESSION_COOKIE_SECURE = False  # Set to True in production
 SESSION_COOKIE_HTTPONLY = True
+
+# REST_AUTH = {
+#     "USE_JWT": True,
+#     "JWT_AUTH_HTTPONLY": False,
+# }
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -195,6 +201,14 @@ DATABASES = {
             'DEPENDENCIES': [], 
         },
     },
+    'celery': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'celery_results',
+        'USER': os.getenv('DB_CELERY_USER'),
+        'PASSWORD': os.getenv('DB_CELERY_PASSWORD'),
+        'HOST': os.getenv('DB_CELERY_HOST'),
+        'PORT': os.getenv('DB_CELERY_PORT'),
+    }
 }
 
 DATABASE_ROUTERS = [
@@ -274,3 +288,10 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CELERY_BROKER_URL = f"amqp://{os.getenv('RABBITMQ_USER')}:{os.getenv('RABBITMQ_PASSWORD')}@{os.getenv('RABBITMQ_HOST')}:{os.getenv('RABBITMQ_PORT')}//"
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_RESULT_BACKEND_DB = "celery"
+
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30
