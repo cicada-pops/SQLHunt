@@ -2,16 +2,16 @@
 
 ## Структура проекта
 
-```
 /core/
 ├── README.md
 ├── manage.py
-├── config/           # Django settings, urls, wsgi/asgi
-├── account/          # Аутентификация и шаблоны
-├── users/            # Пользователи и сигналы
-├── investigations/   # Учебная БД и команды генерации
-└── services/         # Генератор данных
-```
+├── celery_app.py        
+├── config/              # Django settings
+├── account/             # Аутентификация
+├── users/               # Пользователи
+├── investigations/      # Учебная БД
+├── services/            
+└── tests/               
 
 ## Начало работы
 
@@ -20,15 +20,16 @@
 1. Убедитесь, что PostgreSQL установлен на
  вашем компьютере. Если нет, установите его, следуя инструкциям официального сайта PostgreSQL.
 
-2. Создайте 4 новые базы данных и пользователя:
-
-   ```bash
-   psql postgres 
-   ```
+2. Зайдите в оболочку и создайте пользователя.
 
    ```psql
+   psql postgres 
    CREATE USER sqlhunt WITH PASSWORD 'your_password';
    ALTER USER sqlhunt CREATEDB;
+   ```
+3. Создайте 4 новые базы данных и выдайте привелегии:
+
+   ```psql
    CREATE DATABASE users_db OWNER sqlhunt;
    CREATE DATABASE investigations_db OWNER sqlhunt;
    CREATE DATABASE auth_db OWNER sqlhunt;
@@ -36,10 +37,11 @@
    GRANT ALL PRIVILEGES ON DATABASE users_db TO sqlhunt;
    GRANT ALL PRIVILEGES ON DATABASE investigations_db TO sqlhunt;
    GRANT ALL PRIVILEGES ON DATABASE auth_db TO sqlhunt;
-   GRANT ALL PRIVILEGES ON DATABASE celery_results TO celery_user;
+   GRANT ALL PRIVILEGES ON DATABASE celery_results TO sqlhunt;
    GRANT ALL ON SCHEMA public TO sqlhunt;
    exit
    ```
+
 ### Настройка Celery и RabbitMQ
 
 1. Убедитесь, что RabbitMQ установлен на
@@ -83,6 +85,7 @@
    python3 manage.py migrate --database=auth
    python3 manage.py migrate --database=users
    python3 manage.py migrate --database=investigations
+   python3 manage.py migrate --database=celery_results
    ```
    Примечание: Так как база данных default пуста, то при каждом запуске migrate необходимо вручную указывать имя базы данных.
 

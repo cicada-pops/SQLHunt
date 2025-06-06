@@ -1,7 +1,19 @@
 from django.contrib import admin
-from .models import User
 
+from .models import AvailableTable, Case, User
+
+
+@admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = ('id', 'xp')
 
-admin.site.register(User, UserAdmin)
+@admin.register(AvailableTable)
+class AvailableTableAdmin(admin.ModelAdmin):
+    list_display = ('id', 'case', 'table')
+    search_fields = ('case',)
+
+@admin.register(Case)
+class CaseAdmin(admin.ModelAdmin):
+    list_display = ('id', 'description', 'title', 'required_xp', 'reward_xp')
+    list_filter = ('required_xp', 'reward_xp',)
+    search_fields = ('title',)

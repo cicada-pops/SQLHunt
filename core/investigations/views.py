@@ -26,14 +26,14 @@ def schema_view(request, case_id):
 class ExecuteSQLView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request, case_id):
         auth_user = request.user
         try:
             user = User.objects.get(id=auth_user.id)
         except User.DoesNotExist:
           return Response({"error": "Профиль пользователя не найден"}, status=400)
+        
         sql = request.data.get("sql", "").strip()
-        case_id = request.data.get("case_id")
 
         if not sql:
             return Response({"error": "Поле 'sql' не может быть пустым"}, status=status.HTTP_400_BAD_REQUEST)

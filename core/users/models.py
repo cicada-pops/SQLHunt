@@ -27,7 +27,7 @@ class Case(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
     required_xp = models.IntegerField(validators=[MinValueValidator(0)])
-    reward_xd = models.IntegerField(validators=[MinValueValidator(0)])
+    reward_xp = models.IntegerField(validators=[MinValueValidator(0)])
     answer = models.CharField(max_length=50)
 
     def __str__(self):
@@ -61,7 +61,6 @@ class UserProgress(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     case = models.ForeignKey(Case, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=CASE_STATUS, default='не начато')
-    answers = models.JSONField(default=dict)
 
     class Meta: # type: ignore
         app_label = 'users'
