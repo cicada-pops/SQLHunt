@@ -1,6 +1,6 @@
 import re
 
-from celery import shared_task
+from celery_app import app
 from sqlglot import exp, parse_one
 
 
@@ -20,11 +20,11 @@ def is_query_safe(sql: str) -> bool:
 
 def apply_limit(sql: str) -> str:
     sql = sql.strip().rstrip(";")
-    if not re.search(r"LIMIT\\s+\\d+", sql, re.IGNORECASE):
+    if not re.search(r"LIMIT\s+\d+", sql, re.IGNORECASE):
         return f"{sql} LIMIT 1000"
     return sql
 
-@shared_task
+@app.task() 
 def execute_safe_sql(user_id, case_id, sql):
     from django.db import connections
     from users.models import AvailableTable
