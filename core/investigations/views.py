@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import Case, User, UserProgress
 
+from services.answer_checker import check_answer
 from services.schema_creator import get_schema
 
 
@@ -69,3 +70,13 @@ class TaskStatusView(APIView):
             return Response({"status": result.status, "error": str(result.result)})
         else:
             return Response({"status": result.status})
+
+
+class SubmitAnswerView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, case_id):
+        answer = request.data.get("answer", "")
+        success = check_answer(answer=answer, user_id=request.user.id, case_id=case_id)
+
+        return Response({"correct": success})
