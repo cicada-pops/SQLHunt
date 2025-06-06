@@ -19,7 +19,8 @@
 
 1. Убедитесь, что PostgreSQL установлен на
  вашем компьютере. Если нет, установите его, следуя инструкциям официального сайта PostgreSQL.
-2. Создайте 3 новые базы данных и пользователя:
+
+2. Создайте 4 новые базы данных и пользователя:
 
    ```bash
    psql postgres 
@@ -31,14 +32,32 @@
    CREATE DATABASE users_db OWNER sqlhunt;
    CREATE DATABASE investigations_db OWNER sqlhunt;
    CREATE DATABASE auth_db OWNER sqlhunt;
+   CREATE DATABASE celery_results OWNER sqlhunt;
    GRANT ALL PRIVILEGES ON DATABASE users_db TO sqlhunt;
    GRANT ALL PRIVILEGES ON DATABASE investigations_db TO sqlhunt;
    GRANT ALL PRIVILEGES ON DATABASE auth_db TO sqlhunt;
-   GRANT ALL ON SCHEMA public TO sqlhunt;
-   GRANT ALL ON SCHEMA public TO sqlhunt;
+   GRANT ALL PRIVILEGES ON DATABASE celery_results TO celery_user;
    GRANT ALL ON SCHEMA public TO sqlhunt;
    exit
    ```
+### Настройка Celery и RabbitMQ
+
+1. Убедитесь, что RabbitMQ установлен на
+ вашем компьютере. Если нет, установите егo через brew.
+
+    ```bash
+    brew install rabbitmq
+    ```
+
+2. После запуска нам необходимо создать пользователя RabbitMQ, виртуальный хост и разрешить этому пользователю доступ к этому виртуальному хосту:
+
+    ```bash
+    brew services start rabbitmq
+    rabbitmqctl add_user sqlhunt 'your_password'
+    rabbitmqctl add_vhost sqlhunt
+    rabbitmqctl set_user_tags sqlhunt administrator
+    rabbitmqctl set_permissions -p sqlhunt sqlhunt ".*" ".*" ".*"
+    ```
 
 ### Установка и запуск проекта
 
