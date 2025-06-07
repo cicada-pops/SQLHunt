@@ -17,7 +17,7 @@ from investigations.models import (
     Suspect,
 )
 
-from core.services.generator.utils.generator import (
+from services.generator.utils.utils import (
     get_articles,
     get_available_evidence_types,
     get_charge_status,

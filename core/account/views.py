@@ -13,10 +13,17 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from users.models import User as UserXP
+from django.contrib.auth.forms import PasswordResetForm
+from django.utils.translation import gettext as _
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
+from django.contrib.auth import get_user_model
+from rest_framework.exceptions import ValidationError
 
 from .forms import LoginForm, ProfileEditForm, UserEditForm, UserRegistrationForm
 from .models import Profile
-from .serializers import UserRegistrationSerializer, UserSerializer
+from .serializers import UserRegistrationSerializer, UserSerializer, PasswordResetSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -167,3 +174,54 @@ def get_user_data(request):
             'email': request.user.email,
             'experience': 0
         })
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def api_password_reset(request):
+    """
+    Handles password reset via API
+    """
+    serializer = PasswordResetSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data['email']
+        form = PasswordResetForm({'email': email})
+        if form.is_valid():
+            form.save(
+                request=request,
+                use_https=request.is_secure(),
+                from_email=None,  # Use default from settings
+                email_template_name='registration/password_reset_email.html'
+            )
+            return Response({'detail': _('Password reset email has been sent.')})
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def api_password_reset_confirm(request):
+    """
+    Confirm password reset and set new password
+    """
+    try:
+        uid = force_str(urlsafe_base64_decode(request.data.get('uid', '')))
+        token = request.data.get('token', '')
+        password = request.data.get('password', '')
+        
+        if not uid or not token or not password:
+            raise ValidationError('Missing required fields')
+            
+        UserModel = get_user_model()
+        user = UserModel.objects.get(pk=uid)
+        
+        if not default_token_generator.check_token(user, token):
+            raise ValidationError('Invalid reset token')
+            
+        user.set_password(password)
+        user.save()
+        
+        return Response({'detail': 'Password has been reset successfully'})
+        
+    except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist) as e:
+        raise ValidationError('Invalid reset link')
+    except Exception as e:
+        logger.error(f"Password reset confirmation error: {str(e)}")
+        raise ValidationError('Password reset failed')

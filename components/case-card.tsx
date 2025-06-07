@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { X, Play, ChevronUp, ChevronDown } from "lucide-react"
 import { memo, useState, useRef, useEffect } from "react"
+import { useAuth } from "../contexts/auth-context"
 
 interface CaseCardProps {
   number: string
@@ -9,6 +10,8 @@ interface CaseCardProps {
   description: string
   isMarked: boolean
   className?: string
+  requiredExp: number
+  userExp: number
   onExpandCase?: (isExpanded: boolean, caseData: { number: string; title: string; description: string }) => void
 }
 
@@ -17,13 +20,18 @@ export const CaseCard = memo(function CaseCard({
   number, 
   title, 
   description, 
-  isMarked, 
+  isMarked,
+  requiredExp,
+  userExp, 
   className = "",
   onExpandCase
 }: CaseCardProps) {
   // Инициализируем все хуки до каких-либо условных выражений
   const [isExpanded, setIsExpanded] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  
+  // Проверяем, доступно ли дело
+  const isLocked = userExp < requiredExp;
   
   // Проверяем, что мы на клиенте
   useEffect(() => {
@@ -32,12 +40,17 @@ export const CaseCard = memo(function CaseCard({
 
   const handleOpenCase = (e: React.MouseEvent) => {
     e.preventDefault();
-    setIsExpanded(true);
+    
+    // Если дело заблокировано, не открываем его
+    if (isLocked) {
+      return;
+    }
     
     // Уведомляем родительский компонент об открытии карточки
-    // Теперь без задержки, так как мы хотим сначала начать анимацию исчезновения контента
     if (onExpandCase) {
       onExpandCase(true, { number, title, description });
+    } else {
+      setIsExpanded(true);
     }
   };
 
@@ -87,8 +100,14 @@ export const CaseCard = memo(function CaseCard({
   // На сервере или при первом рендере выводим статичную карточку без интерактивности
   if (!isClient) {
     return (
-      <div className={`relative border border-black p-4 h-auto bg-transparent ${className}`}
-           style={{ minHeight: '230px', opacity: isMarked ? 0.6 : 1 }}>
+      <div 
+        className={`relative border border-black p-4 h-auto bg-transparent ${className}`}
+        style={{ 
+          minHeight: '230px', 
+          opacity: isLocked ? 0.4 : isMarked ? 0.6 : 1,
+          filter: isLocked ? 'grayscale(100%)' : 'none'
+        }}
+      >
         {isMarked && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <Image src="/images/close.png" alt="Зачеркнуто" width={200} height={200} style={{ objectFit: 'contain', width: '70%', height: 'auto' }} />
@@ -100,16 +119,28 @@ export const CaseCard = memo(function CaseCard({
             <h3 className="font-bold" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Дело №{number}: {title}</h3>
           </div>
 
-          <p className="text-sm mb-4 text-justify" style={{ fontFamily: "var(--font-rationalist-light)" }}>{description}</p>
-
-          <div className="text-right">
-            <span 
-              className="inline-block relative font-bold group"
-              style={{ fontFamily: "var(--font-rationalist-demibold)" }}
-            >
-              <span>Рассмотреть дело →</span>
-            </span>
-          </div>
+          {isLocked ? (
+            <div className="text-center py-4">
+              <p className="text-sm mb-2" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                Требуется опыта: {requiredExp}
+              </p>
+              <p className="text-sm" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                🔒 Дело заблокировано
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm mb-4 text-justify" style={{ fontFamily: "var(--font-rationalist-light)" }}>{description}</p>
+              <div className="text-right">
+                <span 
+                  className="inline-block relative font-bold group"
+                  style={{ fontFamily: "var(--font-rationalist-demibold)" }}
+                >
+                  <span>Рассмотреть дело →</span>
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -118,45 +149,77 @@ export const CaseCard = memo(function CaseCard({
   return (
     <>
       <div 
-        className={`relative border border-black p-4 h-auto bg-transparent ${className}`}
+        className={`relative border border-black p-4 h-auto bg-transparent ${isLocked ? 'group' : ''} ${className}`}
         style={{
-          transition: 'opacity 0.3s ease-in-out',
-          opacity: isExpanded && onExpandCase ? 0 : isMarked ? 0.6 : 1,
-          minHeight: '230px'
+          transition: 'opacity 0.3s ease-in-out, filter 0.3s ease-in-out',
+          opacity: isExpanded && onExpandCase ? 0 : isLocked ? 0.4 : isMarked ? 0.6 : 1,
+          minHeight: '230px',
+          filter: isLocked ? 'grayscale(100%)' : 'none',
+          cursor: isLocked ? 'not-allowed' : 'default'
         }}
       >
-      {isMarked && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Image src="/images/close.png" alt="Зачеркнуто" width={200} height={200} style={{ objectFit: 'contain', width: '70%', height: 'auto' }} />
-        </div>
-      )}
+        {isMarked && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Image src="/images/close.png" alt="Зачеркнуто" width={200} height={200} style={{ objectFit: 'contain', width: '70%', height: 'auto' }} />
+          </div>
+        )}
 
-      <div className="relative z-10">
-        <div className="mb-2 border-b border-black pb-1">
-          <h3 className="font-bold" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Дело №{number}: {title}</h3>
-        </div>
-
-        <p className="text-sm mb-4 text-justify" style={{ fontFamily: "var(--font-rationalist-light)" }}>{description}</p>
-
-        <div className="text-right">
-          <Link 
-            href="#" 
-              onClick={handleOpenCase}
-            className="inline-block relative font-bold group"
-            style={{ fontFamily: "var(--font-rationalist-demibold)" }}
+        {isLocked && (
+          <div 
+            className="absolute inset-0 flex items-center justify-center"
           >
-            <span>Рассмотреть дело →</span>
-            <span 
-              className="absolute left-0 bottom-0 w-0 h-[1px] bg-black group-hover:w-full" 
-              style={{ transition: "width 0.3s ease-in-out" }}
-            ></span>
-          </Link>
+            <div 
+              className="bg-black text-white text-sm rounded px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap"
+              style={{ fontFamily: "var(--font-rationalist-light)" }}
+            >
+              Требуется {requiredExp} опыта
+            </div>
+          </div>
+        )}
+
+        <div className="relative z-10">
+          <div className="mb-2 border-b border-black pb-1">
+            <h3 className="font-bold" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Дело №{number}: {title}</h3>
+          </div>
+
+          <p className="text-sm mb-4 text-justify" style={{ fontFamily: "var(--font-rationalist-light)" }}>{description}</p>
+
+          <div className="text-right">
+            {isLocked ? (
+              <div className="relative">
+                <span 
+                  className="inline-block relative font-bold text-gray-500"
+                  style={{ fontFamily: "var(--font-rationalist-demibold)" }}
+                >
+                  <span>Рассмотреть дело →</span>
+                </span>
+              </div>
+            ) : (
+              <Link 
+                href="#" 
+                onClick={handleOpenCase}
+                className="inline-block relative font-bold"
+                style={{ fontFamily: "var(--font-rationalist-demibold)" }}
+              >
+                <span className="view-case-link inline-block cursor-pointer hover:opacity-80">
+                  Рассмотреть дело →
+                  <span 
+                    className="absolute left-0 bottom-0 w-0 h-[1px] bg-black view-case-link-hover" 
+                    style={{ transition: "width 0.3s ease-in-out" }}
+                  ></span>
+                </span>
+              </Link>
+            )}
+          </div>
         </div>
+
+        {isLocked && (
+          <div className="absolute inset-0 bg-transparent" />
+        )}
       </div>
-    </div>
 
       {/* Развернутая карточка (отображается только если нет onExpandCase) */}
-      {isExpanded && !onExpandCase && (
+      {isExpanded && !onExpandCase && !isLocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5" 
             style={{ animation: "fadeIn 0.3s ease-out" }}>
           <ExpandedCaseContent 
@@ -192,6 +255,31 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   const [isResultCollapsed, setIsResultCollapsed] = useState(false);
   const [sqlQuery, setSqlQuery] = useState("");
   const [queryResult, setQueryResult] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
+  const { user } = useAuth();
+
+  // Загружаем заметки при монтировании компонента или смене пользователя
+  useEffect(() => {
+    if (user) {
+      const savedNotes = localStorage.getItem(`case_notes_${user.username}_${number}`);
+      if (savedNotes) {
+        setNotes(savedNotes);
+      } else {
+        setNotes(""); // Очищаем заметки, если их нет для текущего пользователя
+      }
+    } else {
+      setNotes(""); // Очищаем заметки, если пользователь не авторизован
+    }
+  }, [number, user]);
+
+  // Сохраняем заметки при изменении
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newNotes = e.target.value;
+    setNotes(newNotes);
+    if (user) {
+      localStorage.setItem(`case_notes_${user.username}_${number}`, newNotes);
+    }
+  };
 
   const handleClose = () => {
     setIsClosing(true);
@@ -374,6 +462,8 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
               className="w-full h-full p-4 border border-gray-300"
               placeholder="Ваши заметки по делу..."
               style={{ fontFamily: "var(--font-rationalist-light)" }}
+              value={notes}
+              onChange={handleNotesChange}
             ></textarea>
           </div>
         )}

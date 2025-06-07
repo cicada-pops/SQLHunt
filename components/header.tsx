@@ -142,7 +142,12 @@ export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
 
         <div className="flex items-center justify-between mb-3">
           <div className="w-1/4 text-center">
-            <p className="text-3xl italic font-serif">CONTACT</p>
+            <a 
+              href="mailto:sqlhunt@gmail.com"
+              className="text-3xl italic font-serif hover:opacity-80 cursor-pointer"
+            >
+              CONTACT
+            </a>
           </div>
           <div className="text-8xl flex items-center justify-center" style={{ fontFamily: "var(--font-chomsky)", lineHeight: "0", marginBottom: "-40px" }}>*</div>
           <div className="text-center w-1/4">

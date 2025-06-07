@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://sqlhunt.com:8000';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sqlhunt.com:8000';
 const API_URL = `${BASE_URL}/account/api`;
 
 // Настраиваем axios для работы с CSRF
@@ -8,13 +8,19 @@ axios.defaults.xsrfCookieName = 'csrftoken';
 axios.defaults.xsrfHeaderName = 'X-CSRFToken';
 axios.defaults.withCredentials = true;
 
+interface CSRFResponse {
+  csrfToken: string;
+}
+
 // Функция для получения CSRF токена
 async function getCSRFToken() {
   try {
     // Делаем GET запрос к Django для получения CSRF токена
-    const response = await axios.get(`${BASE_URL}/account/api/csrf/`);
-    console.log('CSRF token response:', response.data);
-    return response.data;
+    const response = await axios.get<CSRFResponse>(`${BASE_URL}/account/api/csrf/`);
+    const csrfToken = response.data.csrfToken;
+    axios.defaults.headers.common['X-CSRFToken'] = csrfToken;
+    console.log('CSRF token received:', csrfToken);
+    return csrfToken;
   } catch (error) {
     console.error('Error fetching CSRF token:', error);
     throw error;
@@ -46,6 +52,16 @@ export interface RegisterData {
   password2: string;
 }
 
+export interface ResetPasswordData {
+  email: string;
+}
+
+interface ResetPasswordConfirmData {
+  uid: string;
+  token: string;
+  password: string;
+}
+
 const errorMessages: { [key: string]: string } = {
   // Ошибки аутентификации
   'Invalid credentials': 'Неверный логин или пароль',
@@ -75,6 +91,10 @@ const errorMessages: { [key: string]: string } = {
   'Request aborted': 'Запрос прерван',
   'No response from server': 'Нет ответа от сервера',
   'Network Error': 'Ошибка сети. Проверьте подключение',
+  
+  // Ошибки сброса пароля
+  'Email not found': 'Пользователь с такой почтой не найден',
+  'Password reset email sent': 'Инструкции по сбросу пароля отправлены на вашу почту',
 };
 
 // Функция для обработки составных ошибок
@@ -242,6 +262,78 @@ const authService = {
       }
       console.error('Error fetching user data:', error);
       throw error;
+    }
+  },
+
+  async resetPassword(data: ResetPasswordData): Promise<void> {
+    try {
+      // Получаем CSRF токен перед запросом
+      const csrfToken = await getCSRFToken();
+      console.log('Sending password reset request to:', `${API_URL}/password-reset/`);
+      console.log('With data:', data);
+      
+      const response = await axios.post(`${API_URL}/password-reset/`, data, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        withCredentials: true
+      });
+      
+      console.log('Password reset response:', response);
+      
+      if (response.status === 200) {
+        console.log('Password reset email sent successfully');
+      }
+    } catch (error: any) {
+      console.error('Password reset error:', error.response || error);
+      
+      if (error.response) {
+        // Если получили HTML ответ, значит что-то не так с эндпоинтом
+        if (typeof error.response.data === 'string' && error.response.data.includes('<!DOCTYPE html>')) {
+          console.error('Received HTML response instead of JSON');
+          throw new Error(translateError('Server configuration error'));
+        }
+        
+        const errorMessage = error.response.data.detail || 
+                           Object.values(error.response.data).flat().join(', ');
+        throw new Error(translateError(errorMessage));
+      } else if (error.request) {
+        throw new Error(translateError('No response from server'));
+      } else {
+        throw new Error(translateError(error.message));
+      }
+    }
+  },
+
+  async confirmResetPassword(data: ResetPasswordConfirmData): Promise<void> {
+    try {
+      const csrfToken = await getCSRFToken();
+      console.log('Sending password reset confirmation to:', `${API_URL}/password-reset/confirm/`);
+      
+      const response = await axios.post(`${API_URL}/password-reset/confirm/`, data, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        withCredentials: true
+      });
+      
+      if (response.status === 200) {
+        console.log('Password reset confirmed successfully');
+      }
+    } catch (error: any) {
+      console.error('Password reset confirmation error:', error.response || error);
+      
+      if (error.response) {
+        const errorMessage = error.response.data.detail || 
+                           Object.values(error.response.data).flat().join(', ');
+        throw new Error(translateError(errorMessage));
+      } else if (error.request) {
+        throw new Error(translateError('No response from server'));
+      } else {
+        throw new Error(translateError(error.message));
+      }
     }
   },
 };

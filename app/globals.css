@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'TT-Rationalist-Bold';
+  src: url('/fonts/TT-Rationalist-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'TT-Rationalist-DemiBold';
+  src: url('/fonts/TT-Rationalist-DemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'TT-Rationalist-Light';
+  src: url('/fonts/TT-Rationalist-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-rgb: 245, 233, 209;
@@ -10,6 +34,10 @@
   
   --hover-transition-duration: 0.2s;
   --hover-transition-timing: ease-out;
+  --font-rationalist-bold: 'TT-Rationalist-Bold', sans-serif;
+  --font-rationalist-demibold: 'TT-Rationalist-DemiBold', sans-serif;
+  --font-rationalist-light: 'TT-Rationalist-Light', sans-serif;
+  --background-color: #F5EFE6;
 }
 
 html {
@@ -35,8 +63,11 @@ body {
   background-size: cover;
   background-attachment: fixed;
   position: relative;
-  background-color: rgb(245, 233, 209);
+  background-color: var(--background-color);
   will-change: auto;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
 }
 
 main {
@@ -159,6 +190,11 @@ a, button {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Стили для анимации подчеркивания кнопки "Рассмотреть дело" */
+.view-case-link:hover .view-case-link-hover {
+  width: 100%;
 }
 
 @layer base {

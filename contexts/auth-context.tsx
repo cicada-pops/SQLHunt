@@ -33,6 +33,7 @@ export const useAuth = () => useContext(AuthContext);
 // Провайдер контекста авторизации
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   const updateUserData = async () => {
     try {
@@ -44,6 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           registrationDate: new Date().toISOString(),
           experience: userData.experience
         });
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
     } catch (error: any) {
       console.error('Error updating user data:', error);
@@ -56,31 +61,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Проверяем наличие пользователя в localStorage при загрузке
   useEffect(() => {
-    updateUserData();
+    // Сначала проверяем токен
+    const isAuth = authService.isAuthenticated();
+    setIsAuthenticated(isAuth);
+    
+    if (isAuth) {
+      updateUserData();
+    }
   }, []);
 
   // Периодически обновляем данные пользователя
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated) {
       const interval = setInterval(updateUserData, 30000); // Обновляем каждые 30 секунд
       return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [isAuthenticated]);
 
   // Функция для авторизации
   const login = async (username: string, password: string) => {
-    await authService.login({ username, password });
+    const response = await authService.login({ username, password });
+    setIsAuthenticated(true);
     await updateUserData();
   };
 
   // Функция для регистрации
   const register = async (username: string, email: string, password: string) => {
-    await authService.register({ 
+    const response = await authService.register({ 
       username, 
       email, 
       password, 
       password2: password 
     });
+    setIsAuthenticated(true);
     await updateUserData();
   };
 
@@ -88,12 +101,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     authService.logout();
     setUser(null);
+    setIsAuthenticated(false);
   };
 
   // Значение контекста
   const value = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated,
     login,
     register,
     logout,

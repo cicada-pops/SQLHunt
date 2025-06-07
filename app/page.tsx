@@ -3,58 +3,77 @@
 import Link from "next/link"
 import { CaseCard, ExpandedCaseContent } from "../components/case-card"
 import { Header } from "../components/header"
-import { AuthProvider } from "../contexts/auth-context"
+import { AuthProvider, useAuth } from "../contexts/auth-context"
 import { useEffect, useCallback, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { AuthModal } from "../components/auth-modal"
+
+interface CaseData {
+  number: string;
+  title: string;
+  description: string;
+  requiredExp: number;
+}
 
 export default function Home() {
   // Получаем параметры из URL
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { isAuthenticated, user } = useAuth();
 
   // Ref для отслеживания первого рендера
   const isFirstRender = useRef(true);
   // Ref для отслеживания инициализации с URL
   const initializedFromUrl = useRef(false);
   
+  // Состояние для модального окна авторизации
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingCaseData, setPendingCaseData] = useState<CaseData | null>(null);
+
   // Массив с данными всех дел для подгрузки по номеру из URL
-  const casesList = [
+  const casesList: CaseData[] = [
     {
       number: "001",
       title: "Убийство на рассвете",
-      description: "На окраине города найдено тело частного детектива, занимавшегося разоблачением коррупции в полиции. В его записной книжке были указаны несколько имен, но записи обрываются. Среди улик загадочная записка с тремя инициалами. Кто стоял за этим убийством и что знал детектив перед смертью?"
+      description: "На окраине города найдено тело частного детектива, занимавшегося разоблачением коррупции в полиции. В его записной книжке были указаны несколько имен, но записи обрываются. Среди улик загадочная записка с тремя инициалами. Кто стоял за этим убийством и что знал детектив перед смертью?",
+      requiredExp: 0 // Начальное дело
     },
     {
       number: "002",
       title: "Пропавший картель",
-      description: "Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих."
+      description: "Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих.",
+      requiredExp: 100 // Требуется 100 опыта
     },
     {
       number: "003",
       title: "Загадка закрытого кабинета",
-      description: "В элитном особняке найден мертвым известный адвокат. Дверь его кабинета была заперта изнутри, окно не вскрыто. На столе стоит наполовину допитый стакан коньяка, а рядом — перевернутый лист бумаги с едва различимыми буквами. Как убийца смог выбраться из закрытой комнаты?"
+      description: "В элитном особняке найден мертвым известный адвокат. Дверь его кабинета была заперта изнутри, окно не вскрыто. На столе стоит наполовину допитый стакан коньяка, а рядом — перевернутый лист бумаги с едва различимыми буквами. Как убийца смог выбраться из закрытой комнаты?",
+      requiredExp: 200 // Требуется 200 опыта
     },
     {
       number: "004",
       title: "Загадка закрытого кабинета",
-      description: "В элитном особняке найден мертвым известный адвокат. Дверь его кабинета была заперта изнутри, окно не вскрыто. На столе стоит наполовину допитый стакан коньяка, а рядом — перевернутый лист бумаги с едва различимыми буквами. Как убийца смог выбраться из закрытой комнаты?"
+      description: "В элитном особняке найден мертвым известный адвокат. Дверь его кабинета была заперта изнутри, окно не вскрыто. На столе стоит наполовину допитый стакан коньяка, а рядом — перевернутый лист бумаги с едва различимыми буквами. Как убийца смог выбраться из закрытой комнаты?",
+      requiredExp: 300 // Требуется 300 опыта
     },
     {
       number: "005",
       title: "Пропавший картель",
-      description: "Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих."
+      description: "Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих.",
+      requiredExp: 400 // Требуется 400 опыта
     },
     {
       number: "006",
       title: "Пропавший картель",
-      description: "Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих."
+      description: "Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих.",
+      requiredExp: 500 // Требуется 500 опыта
     }
   ];
   
   // Состояние для отслеживания открытой карточки
   const [expandedCase, setExpandedCase] = useState<{
     isExpanded: boolean;
-    data: { number: string; title: string; description: string } | null;
+    data: CaseData | null;
     isClosing: boolean;
   }>({
     isExpanded: false,
@@ -87,18 +106,47 @@ export default function Home() {
     if (caseNumber) {
       const caseData = casesList.find(c => c.number === caseNumber);
       if (caseData) {
-        // Устанавливаем состояния (не вызовет повторного рендера благодаря initializedFromUrl)
-        setExpandedCase({
-          isExpanded: true,
-          data: caseData,
-          isClosing: false
-        });
-        setMainContentState('hidden');
-        setPageTitle(`Дело №${caseData.number}: ${caseData.title} - SQL Hunt`);
+        // Проверяем, достаточно ли у пользователя опыта
+        const userExp = user?.experience || 0;
+        if (userExp >= caseData.requiredExp) {
+          // Открываем дело только если достаточно опыта
+          setExpandedCase({
+            isExpanded: true,
+            data: caseData,
+            isClosing: false
+          });
+          setMainContentState('hidden');
+          setPageTitle(`Дело №${caseData.number}: ${caseData.title} - SQL Hunt`);
+        } else {
+          // Если опыта недостаточно, перенаправляем на главную
+          router.replace('/');
+        }
         initializedFromUrl.current = true;
       }
     }
-  }, [searchParams]);
+  }, [searchParams, user]);
+
+  // Обработчик успешной авторизации
+  const handleAuthSuccess = () => {
+    setIsAuthModalOpen(false);
+    if (pendingCaseData) {
+      // Проверяем, достаточно ли у пользователя опыта
+      const userExp = user?.experience || 0;
+      if (userExp >= pendingCaseData.requiredExp) {
+        // Открываем отложенное дело после успешной авторизации
+        setExpandedCase({
+          isExpanded: true,
+          data: pendingCaseData,
+          isClosing: false
+        });
+        setMainContentState('hidden');
+        setPageTitle(`Дело №${pendingCaseData.number}: ${pendingCaseData.title} - SQL Hunt`);
+        // Восстанавливаем URL с номером дела
+        router.push(`/?case=${pendingCaseData.number}`);
+      }
+      setPendingCaseData(null);
+    }
+  };
 
   // Обработка кнопок навигации браузера (Назад/Вперед)
   useEffect(() => {
@@ -177,9 +225,9 @@ export default function Home() {
     });
   }, []);
   
-  const handleExpandCase = useCallback((isExpanded: boolean, caseData: { number: string; title: string; description: string }) => {
+  const handleExpandCase = useCallback((isExpanded: boolean, caseData: CaseData) => {
     if (!isExpanded) {
-      // Если закрываем карточку, сначала показываем анимацию закрытия карточки
+      // Если закрываем карточку
       setExpandedCase(prev => ({
         ...prev,
         isClosing: true
@@ -211,6 +259,13 @@ export default function Home() {
         }, 400);
       }, 600);
     } else {
+      // Проверяем, достаточно ли у пользователя опыта
+      const userExp = user?.experience || 0;
+      if (userExp < caseData.requiredExp) {
+        return;
+      }
+
+      // Открываем карточку
       // Сначала скрываем основной контент
       setMainContentState('hiding');
       
@@ -232,7 +287,7 @@ export default function Home() {
         });
       }, 500);
     }
-  }, []);
+  }, [user]);
   
   // Используем useEffect для изменения title страницы
   useEffect(() => {
@@ -318,18 +373,22 @@ export default function Home() {
             {/* Первый столбец */}
             <div className="sm:w-1/2 lg:w-1/3 flex flex-col gap-4">
               <CaseCard
-                number="001"
-                title="Убийство на рассвете"
-                description="На окраине города найдено тело частного детектива, занимавшегося разоблачением коррупции в полиции. В его записной книжке были указаны несколько имен, но записи обрываются. Среди улик загадочная записка с тремя инициалами. Кто стоял за этим убийством и что знал детектив перед смертью?"
+                number={casesList[0].number}
+                title={casesList[0].title}
+                description={casesList[0].description}
                 isMarked={false}
+                requiredExp={casesList[0].requiredExp}
+                userExp={user?.experience || 0}
                 onExpandCase={handleExpandCase}
               />
               
               <CaseCard
-                number="004"
-                title="Загадка закрытого кабинета"
-                description="В элитном особняке найден мертвым известный адвокат. Дверь его кабинета была заперта изнутри, окно не вскрыто. На столе стоит наполовину допитый стакан коньяка, а рядом — перевернутый лист бумаги с едва различимыми буквами. Как убийца смог выбраться из закрытой комнаты?"
+                number={casesList[3].number}
+                title={casesList[3].title}
+                description={casesList[3].description}
                 isMarked={false}
+                requiredExp={casesList[3].requiredExp}
+                userExp={user?.experience || 0}
                 onExpandCase={handleExpandCase}
               />
             </div>
@@ -337,18 +396,22 @@ export default function Home() {
             {/* Второй столбец */}
             <div className="sm:w-1/2 lg:w-1/3 flex flex-col gap-4">
               <CaseCard
-                number="002"
-                title="Пропавший картель"
-                description="Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих."
+                number={casesList[1].number}
+                title={casesList[1].title}
+                description={casesList[1].description}
                 isMarked={false}
+                requiredExp={casesList[1].requiredExp}
+                userExp={user?.experience || 0}
                 onExpandCase={handleExpandCase}
               />
               
               <CaseCard
-                number="005"
-                title="Пропавший картель"
-                description="Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих."
+                number={casesList[4].number}
+                title={casesList[4].title}
+                description={casesList[4].description}
                 isMarked={false}
+                requiredExp={casesList[4].requiredExp}
+                userExp={user?.experience || 0}
                 onExpandCase={handleExpandCase}
               />
             </div>
@@ -356,18 +419,22 @@ export default function Home() {
             {/* Третий столбец - виден только на больших экранах */}
             <div className="hidden lg:flex lg:w-1/3 flex-col gap-4">
               <CaseCard
-                number="003"
-                title="Загадка закрытого кабинета"
-                description="В элитном особняке найден мертвым известный адвокат. Дверь его кабинета была заперта изнутри, окно не вскрыто. На столе стоит наполовину допитый стакан коньяка, а рядом — перевернутый лист бумаги с едва различимыми буквами. Как убийца смог выбраться из закрытой комнаты?"
+                number={casesList[2].number}
+                title={casesList[2].title}
+                description={casesList[2].description}
                 isMarked={false}
+                requiredExp={casesList[2].requiredExp}
+                userExp={user?.experience || 0}
                 onExpandCase={handleExpandCase}
               />
               
               <CaseCard
-                number="006"
-                title="Пропавший картель"
-                description="Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих."
+                number={casesList[5].number}
+                title={casesList[5].title}
+                description={casesList[5].description}
                 isMarked={false}
+                requiredExp={casesList[5].requiredExp}
+                userExp={user?.experience || 0}
                 onExpandCase={handleExpandCase}
               />
             </div>
@@ -401,6 +468,16 @@ export default function Home() {
       <main className="min-h-screen flex flex-col p-10 relative">
         {/* Хедер (всегда видимый) */}
         <Header onSmoothScroll={handleSmoothScroll} />
+
+        {/* Модальное окно авторизации */}
+        <AuthModal 
+          isOpen={isAuthModalOpen} 
+          onClose={() => {
+            setIsAuthModalOpen(false);
+            setPendingCaseData(null);
+          }}
+          onAuthSuccess={handleAuthSuccess}
+        />
 
         {/* Содержимое развернутой карточки или основной контент - отображаем только на клиенте */}
         {isClient ? (
