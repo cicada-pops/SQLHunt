@@ -1,12 +1,13 @@
 from celery.result import AsyncResult
 from celery_app import app
+from investigations.decorators import validate_case_access
 from investigations.tasks import execute_safe_sql
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from users.models import Case, User, UserProgress
+from users.models import UserProgress
 
 from services.answer_checker import check_answer
 from services.schema_creator import get_schema
@@ -14,37 +15,23 @@ from services.schema_creator import get_schema
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@validate_case_access
 def schema_view(request, case_id):
-    try:
-        Case.objects.get(pk=case_id)
-    except Case.DoesNotExist:
-        return Response({'error': 'Дело не найдено'}, status=status.HTTP_404_NOT_FOUND)
-
-    schema = get_schema(case_id)
+    schema = get_schema(request.case.id) 
     return Response(schema)
 
 
 class ExecuteSQLView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @validate_case_access
     def post(self, request, case_id):
-        auth_user = request.user
-        try:
-            user = User.objects.get(id=auth_user.id)
-        except User.DoesNotExist:
-          return Response({"error": "Профиль пользователя не найден"}, status=400)
-        
         sql = request.data.get("sql", "").strip()
-
         if not sql:
             return Response({"error": "Поле 'sql' не может быть пустым"}, status=status.HTTP_400_BAD_REQUEST)
-        if not case_id:
-            return Response({"error": "Поле 'case_id' обязательно"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            case = Case.objects.get(id=case_id)
-        except Case.DoesNotExist:
-            return Response({"error": "Дело не найдено"}, status=status.HTTP_404_NOT_FOUND)
+
+        user = request.user
+        case = request.case  
 
         try:
             UserProgress.objects.get(user=user, case=case)
@@ -52,7 +39,7 @@ class ExecuteSQLView(APIView):
             return Response({"error": "Прогресс по делу не найден"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            task = execute_safe_sql.delay(user.id, case.id, sql)  # type: ignore
+            task = execute_safe_sql.delay(user.id, case.id, sql) # type: ignore
         except Exception as e:
             return Response({"error": f"Ошибка запуска задачи: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -75,8 +62,8 @@ class TaskStatusView(APIView):
 class SubmitAnswerView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @validate_case_access
     def post(self, request, case_id):
         answer = request.data.get("answer", "")
-        success = check_answer(answer=answer, user_id=request.user.id, case_id=case_id)
-
+        success = check_answer(answer=answer, user_id=request.user.id, case_id=request.case.id)
         return Response({"correct": success})

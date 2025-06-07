@@ -22,15 +22,14 @@ from services.generator.data.tables import (
 
 
 def get_gender(full_name):
-    try:
-        patronymic = full_name.split()[2].lower() 
-    except IndexError:
-        return "неопределен"
+    parts = full_name.lower().split()
+    for part in parts:
+        if part.endswith(('вна', 'ова')):
+            return "жен"
+        if part.endswith(("ович", "евич", "ич", "ов", "ев")):
+            return "муж"
+    return "жен"
 
-    if patronymic.endswith(("ович", "евич", "ич", "ов", "ев")):
-        return "муж"
-    else:
-        return "жен"
 
 def get_color(gender, clothing_item):
     base_item = clothing_item.split()[-1]

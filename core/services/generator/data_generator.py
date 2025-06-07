@@ -17,7 +17,7 @@ from investigations.models import (
     Suspect,
 )
 
-from services.generator.utils.utils import (
+from .utils.utils import (
     get_articles,
     get_available_evidence_types,
     get_charge_status,
@@ -281,7 +281,13 @@ class InvestigationsDataGenerator:
               suspect.cases.add(case)
               self.case_suspects.append((case_id, sid))
 
+    def clear_all_data(self):
+        models = [Evidence, Alibi, Statement, Suspect, Charge, CrimeScene, Article, Person, Case]
+        for model in models:
+            model.objects.using('investigations').all().delete()
+
     def run(self, persons=1500, suspects=500, charges=100, statements=100):
+        self.clear_all_data()
         self.generate_persons(count=persons)
         self.generate_cases()
         self.generate_suspects(count=suspects)

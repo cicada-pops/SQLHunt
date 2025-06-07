@@ -93,6 +93,8 @@
     ```
     python3 manage.py generate_investigations_data
     ```
+    Примечание: для очистки данных используйте параметр --clear
+
 6. Создайте суперпользователя:
 
    ```bash
