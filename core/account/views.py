@@ -177,6 +177,7 @@ def get_user_data(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@ensure_csrf_cookie
 def api_password_reset(request):
     """
     Handles password reset via API
