@@ -16,7 +16,7 @@ class User(TimeStampedModel):
     xp = models.IntegerField(default=0, validators=[MinValueValidator(0)])
 
     def __str__(self):
-        return self.pk
+        return str(self.pk)
     
     class Meta:  # type: ignore
         managed = True

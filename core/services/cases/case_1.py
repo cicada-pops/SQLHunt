@@ -22,7 +22,7 @@ class SilverKey(BaseCase):
         Все подробности в материалах дела. Учтите, что настоящий преступник может не входить в число подозреваемых
         """
     )
-    required_xp = 200
+    required_xp = 0
     reward_xp = 100
     available_tables = [
         "case",
