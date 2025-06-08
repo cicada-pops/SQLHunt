@@ -1,11 +1,15 @@
 from django.contrib import admin
 
-from .models import AvailableTable, Case, User
+from .models import AvailableTable, Case, User, UserProgress
 
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = ('id', 'xp')
+
+@admin.register(UserProgress)
+class UserProgressAdmin(admin.ModelAdmin):
+    search_fields = ('case', 'user')
 
 @admin.register(AvailableTable)
 class AvailableTableAdmin(admin.ModelAdmin):

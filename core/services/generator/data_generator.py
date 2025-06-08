@@ -4,7 +4,6 @@ import random
 from datetime import datetime, timedelta
 
 from django.utils import timezone
-from faker import Faker
 from investigations.models import (
     Alibi,
     Article,
@@ -22,8 +21,13 @@ from .utils.utils import (
     get_available_evidence_types,
     get_charge_status,
     get_confirmed_alibi,
+    get_date_between,
+    get_date_of_birth,
     get_description,
     get_false_alibi,
+    get_job,
+    get_location,
+    get_name,
     get_random_date_between,
     get_random_evidence_description,
     get_random_testimony,
@@ -36,8 +40,6 @@ from .utils.utils import (
 
 class InvestigationsDataGenerator:
     def __init__(self):
-        self.fake = Faker("ru_RU")
-
         self.persons = []
         self.cases = []
         self.suspects = []
@@ -52,13 +54,15 @@ class InvestigationsDataGenerator:
     def generate_persons(self, count: int = 1500):
         
         for _ in range(count):
-          name = self.fake.name()
-          date_of_birth = self.fake.date_of_birth(minimum_age=18, maximum_age=90)
-          job = self.fake.job()
+          name = get_name()
+          date_of_birth = get_date_of_birth()
+          job = get_job
+          description = get_description(name, job)
+          
           person = Person.objects.using('investigations').create(
               name=name,
               date_birth=date_of_birth,
-              description=get_description(name, job)
+              description= description
           )
           self.persons.append(person)
 
@@ -77,7 +81,6 @@ class InvestigationsDataGenerator:
                   else None
               )
               case = Case.objects.using('investigations').create(
-                  id=row['id'],
                   description=row["description"],
                   date_opened=date_opened,
                   date_closed=date_closed,
@@ -190,7 +193,7 @@ class InvestigationsDataGenerator:
 
         def get_unique_location():
             while True:
-                location = self.fake.address().replace('\n', ', ')
+                location = get_location()
                 if location not in used_locations:
                     used_locations.add(location)
                     return location
@@ -198,7 +201,7 @@ class InvestigationsDataGenerator:
         for case in self.cases:
             latest_date = case.date_opened - timedelta(days=1)
             earliest_date = latest_date - timedelta(days=30)
-            crime_date = self.fake.date_between(start_date=earliest_date, end_date=latest_date)
+            crime_date = get_date_between(earliest_date, latest_date)
             location = get_unique_location()
 
             scene = CrimeScene.objects.using('investigations').create(

@@ -1,6 +1,8 @@
 import random
 from datetime import timedelta
 
+from faker import Faker
+
 from services.generator.data.tables import (
     ACCESSORIES,
     BUILD,
@@ -20,6 +22,19 @@ from services.generator.data.tables import (
     UNCONFIRMED_ALIBI,
 )
 
+fake = Faker("ru_RU")
+
+def get_name():
+    return fake.name()
+
+def get_job():
+    return fake.job()
+
+def get_date_of_birth():
+    return fake.date_of_birth(minimum_age=18, maximum_age=90)
+
+def get_date_between(earliest_date, latest_date):
+    return fake.date_between(start_date=earliest_date, end_date=latest_date)
 
 def get_gender(full_name):
     parts = full_name.lower().split()
@@ -29,7 +44,6 @@ def get_gender(full_name):
         if part.endswith(("ович", "евич", "ич", "ов", "ев")):
             return "муж"
     return "жен"
-
 
 def get_color(gender, clothing_item):
     base_item = clothing_item.split()[-1]
@@ -78,6 +92,9 @@ def generate_appearance(gender):
       "traits": traits,
       "details": details
   }
+
+def get_location():
+    return fake.address().replace('\n', ', ')
 
 def get_description(name, job):
     gender = get_gender(name)

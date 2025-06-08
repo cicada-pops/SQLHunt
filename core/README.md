@@ -89,9 +89,10 @@
    ```
    Примечание: Так как база данных default пуста, то при каждом запуске migrate необходимо вручную указывать имя базы данных.
 
-5. Сгенерируйте данные 
+5. Сгенерируйте данные и загрузите дела
     ```
-    python3 manage.py generate_investigations_data
+    python3 manage.py generate_investigations
+    python3 manage.py load_cases
     ```
     Примечание: для очистки данных используйте параметр --clear
 
