@@ -56,13 +56,13 @@ class InvestigationsDataGenerator:
         for _ in range(count):
           name = get_name()
           date_of_birth = get_date_of_birth()
-          job = get_job
+          job = get_job()
           description = get_description(name, job)
           
           person = Person.objects.using('investigations').create(
               name=name,
               date_birth=date_of_birth,
-              description= description
+              description=description
           )
           self.persons.append(person)
 

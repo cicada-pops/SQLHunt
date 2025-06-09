@@ -80,7 +80,7 @@
 
    ```bash
    python3 manage.py makemigrations
-   python3 manage.py migrate authentication --database=auth
+   python3 manage.py migrate --database=auth
    python3 manage.py migrate users --database=users
    python3 manage.py migrate investigations --database=investigations
    python3 manage.py migrate --database=celery

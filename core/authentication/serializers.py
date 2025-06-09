@@ -1,7 +1,7 @@
-from rest_framework import serializers
-from django.contrib.auth import get_user_model
 import logging
-from users.models import User as UsersUser
+
+from django.contrib.auth import get_user_model
+from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 email=validated_data['email'],
                 password=validated_data['password']
             )
-            UsersUser.objects.create(id=user.pk)
             logger.info(f"Successfully created user: {user.username}")
             return user
         except Exception as e:

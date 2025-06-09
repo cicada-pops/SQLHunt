@@ -38,7 +38,7 @@ def create_user_on_profile_creation(sender, instance, created, **kwargs):
     if created:
         try:
             with transaction.atomic(using='users'):
-                User.objects.using('users').create(id=instance.id)
+                 User.objects.using('users').get_or_create(id=instance.id)
                 
         except IntegrityError as e:
             instance.delete()

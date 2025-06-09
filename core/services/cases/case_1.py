@@ -28,7 +28,7 @@ class SilverKey(BaseCase):
         "case",
         "person",
         "suspect",
-        "crimescene",
+        "crime_scene",
         "evidence",
         "alibi",
     ]

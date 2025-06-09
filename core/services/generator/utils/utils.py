@@ -69,13 +69,13 @@ def get_height(gender):
 
 def generate_appearance(gender):
   top = random.choice(CLOTHES['верх'][gender])
-  top_color = get_color(gender, top)
+  top_color = get_color(gender, top) or ""
   
   bottom = random.choice(CLOTHES['низ'][gender])
-  bottom_color = get_color(gender, bottom)
+  bottom_color = get_color(gender, bottom) or ""
 
   shoes = random.choice(CLOTHES['обувь'][gender])
-  shoes_color = get_color(gender, shoes)
+  shoes_color = get_color(gender, shoes) or ""
 
   accessory = random.choice(ACCESSORIES[gender])
   traits = random.sample(TRAITS, k=random.randint(1, 3))

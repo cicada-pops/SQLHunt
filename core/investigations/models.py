@@ -24,9 +24,10 @@ class Person(models.Model):
             raise ValidationError("Date of birth must be at least 18 years ago.")
     
     def __str__(self):
-        return f'Person {self.name}'
+        return f'{self.name}'
     
     class Meta:
+        db_table = 'person'
         app_label = 'investigations'
         managed = True
     
@@ -87,11 +88,12 @@ class Case(models.Model):
                 name='date_closed_after_date_opened'
             )
         ]
+        db_table = 'case'
         app_label = 'investigations'
         managed = True
 
     def __str__(self):
-        return f"Case {self.pk}"
+        return f"{self.pk}"
 
 
 class Suspect(models.Model):
@@ -105,7 +107,7 @@ class Suspect(models.Model):
     
     person = models.OneToOneField(Person, on_delete=models.CASCADE)
     status = models.CharField(max_length=21, choices=SUSPECT_STATUS)
-    cases = models.ManyToManyField(Case)
+    cases = models.ManyToManyField(Case, through='SuspectCase')
     
     def clean(self):
         super().clean()
@@ -113,11 +115,24 @@ class Suspect(models.Model):
             raise ValidationError(f"Invalid suspect status: {self.status}")
 
     class Meta:
+        db_table = 'suspect'
         app_label = 'investigations'
         managed = True
         
     def __str__(self):
-        return f"Подозреваемый {self.person.name}"
+        return f"{self.person.name}"
+
+class SuspectCase(models.Model):
+    case = models.ForeignKey(Case, on_delete=models.CASCADE)
+    suspect = models.ForeignKey(Suspect, on_delete=models.CASCADE)
+    
+    class Meta:
+        db_table = 'suspect_case'
+        app_label = 'investigations'
+        managed = True
+        
+    def __str__(self):
+        return f"{self.suspect} is a suspect in {self.case}"
 
 
 class Article(models.Model):
@@ -125,11 +140,12 @@ class Article(models.Model):
     description = models.TextField()
     
     class Meta:
+        db_table = 'article'
         app_label = 'investigations'
         managed = True
 
     def __str__(self):
-        return f"Article {self.pk}"
+        return f"{self.pk}"
 
 
 class Charge(models.Model):
@@ -157,11 +173,12 @@ class Charge(models.Model):
             raise ValidationError(f"Invalid charge status: {self.status}")
     
     class Meta:
+        db_table = 'charge'
         app_label = 'investigations'
         managed = True
     
     def __str__(self):
-        return f"Charge {self.pk}"
+        return f"{self.pk}"
 
 
 class Alibi(models.Model):
@@ -177,6 +194,7 @@ class Alibi(models.Model):
     suspect = models.OneToOneField(Suspect, on_delete=models.CASCADE)
     
     class Meta:
+        db_table = 'alibi'
         app_label = 'investigations'
         managed = True
     
@@ -201,13 +219,14 @@ class Statement(models.Model):
             raise ValidationError("The statement date cannot be in the future.")
         
     class Meta:
+        db_table = 'statement'
         unique_together = ('alibi', 'person')
         app_label = 'investigations'
         managed = True
 
     def __str__(self):
         return f"Statement by {self.person.name}"
-    
+
     
 class CrimeScene(models.Model):
     location_validator = RegexValidator(
@@ -220,6 +239,7 @@ class CrimeScene(models.Model):
     case = models.ForeignKey(Case, on_delete=models.CASCADE)
     
     class Meta:
+        db_table = 'crime_scene'
         app_label = 'investigations'
         managed = True
 
@@ -254,6 +274,7 @@ class Evidence(models.Model):
     scene = models.ForeignKey(CrimeScene, on_delete=models.CASCADE)
     
     class Meta:
+        db_table = 'evidence'
         app_label = 'investigations'
         managed = True
     
@@ -266,4 +287,4 @@ class Evidence(models.Model):
             raise ValidationError(f"Invalid evidence type: {self.type}")
     
     def __str__(self):
-        return f"Evidence {self.pk}"
+        return f"{self.pk}"
