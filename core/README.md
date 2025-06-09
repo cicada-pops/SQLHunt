@@ -5,21 +5,20 @@
 /core/
 ├── README.md
 ├── manage.py
-├── celery_app.py        
+├── celery_app.py
 ├── config/              # Django settings
 ├── account/             # Аутентификация
 ├── users/               # Пользователи
 ├── investigations/      # Учебная БД
-├── services/            
-└── tests/               
+├── services/
+└── tests/
 
 ## Начало работы
 
 ### Настройка базы данных PostgreSQL
 
 1. Убедитесь, что PostgreSQL установлен на
- вашем компьютере. Если нет, установите его, следуя инструкциям официального сайта PostgreSQL.
-
+   вашем компьютере. Если нет, установите его, следуя инструкциям официального сайта PostgreSQL.
 2. Зайдите в оболочку и создайте пользователя.
 
    ```psql
@@ -45,21 +44,20 @@
 ### Настройка Celery и RabbitMQ
 
 1. Убедитесь, что RabbitMQ установлен на
- вашем компьютере. Если нет, установите егo через brew.
+   вашем компьютере. Если нет, установите егo через brew.
 
-    ```bash
-    brew install rabbitmq
-    ```
-
+   ```bash
+   brew install rabbitmq
+   ```
 2. После запуска нам необходимо создать пользователя RabbitMQ, виртуальный хост и разрешить этому пользователю доступ к этому виртуальному хосту:
 
-    ```bash
-    brew services start rabbitmq
-    rabbitmqctl add_user sqlhunt 'your_password'
-    rabbitmqctl add_vhost sqlhunt
-    rabbitmqctl set_user_tags sqlhunt administrator
-    rabbitmqctl set_permissions -p sqlhunt sqlhunt ".*" ".*" ".*"
-    ```
+   ```bash
+   brew services start rabbitmq
+   rabbitmqctl add_user sqlhunt 'your_password'
+   rabbitmqctl add_vhost sqlhunt
+   rabbitmqctl set_user_tags sqlhunt administrator
+   rabbitmqctl set_permissions -p sqlhunt sqlhunt ".*" ".*" ".*"
+   ```
 
 ### Установка и запуск проекта
 
@@ -87,15 +85,16 @@
    python3 manage.py migrate --database=investigations
    python3 manage.py migrate --database=celery_results
    ```
+
    Примечание: Так как база данных default пуста, то при каждом запуске migrate необходимо вручную указывать имя базы данных.
-
 5. Сгенерируйте данные и загрузите дела
-    ```
-    python3 manage.py generate_investigations
-    python3 manage.py load_cases
-    ```
-    Примечание: для очистки данных используйте параметр --clear
 
+   ```
+   python3 manage.py generate_investigations
+   python3 manage.py load_cases
+   ```
+
+   Примечание: для очистки данных используйте параметр --clear
 6. Создайте суперпользователя:
 
    ```bash
@@ -105,5 +104,8 @@
 
    ```bash
    python3 manage.py runserver_plus sqlhunt.com:8000 --cert-file cert.crt
+
+   PYTHONPATH=$PYTHONPATH:$PWD/core celery -A core worker -l INFO
    ```
+
    Примечание: Мы указали команде runserver_plus имя файла SSL/TLS-сертификата. Django Extensions автоматически сгенерирует ключ и сертификат. Пройдите по URL-адресу [https://sqlhunt.com:8000/](https://sqlhunt.com:8000/)

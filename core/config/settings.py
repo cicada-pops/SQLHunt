@@ -328,7 +328,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CELERY_BROKER_URL = f"amqp://{os.getenv('RABBITMQ_USER')}:{os.getenv('RABBITMQ_PASSWORD')}@{os.getenv('RABBITMQ_HOST')}:{os.getenv('RABBITMQ_PORT')}//"
+CELERY_BROKER_URL = f"amqp://{os.getenv('RABBITMQ_USER')}:{os.getenv('RABBITMQ_PASSWORD')}@{os.getenv('RABBITMQ_HOST')}:{os.getenv('RABBITMQ_PORT')}/sqlhunt"
 CELERY_RESULT_BACKEND = f"db+postgresql+psycopg2://{os.getenv('DB_CELERY_USER')}:{os.getenv('DB_CELERY_PASSWORD')}@{os.getenv('DB_CELERY_HOST')}/celery_results"
 
 CELERY_TASK_TRACK_STARTED = True

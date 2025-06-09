@@ -12,7 +12,7 @@ interface CaseCardProps {
   className?: string
   requiredExp: number
   userExp: number
-  onExpandCase?: (isExpanded: boolean, caseData: { number: string; title: string; description: string }) => void
+  onExpandCase?: (isExpanded: boolean, caseData: { number: string; title: string; description: string; requiredExp: number }) => void
 }
 
 // Используем memo для предотвращения ненужных перерендеров
@@ -48,7 +48,7 @@ export const CaseCard = memo(function CaseCard({
     
     // Уведомляем родительский компонент об открытии карточки
     if (onExpandCase) {
-      onExpandCase(true, { number, title, description });
+      onExpandCase(true, { number, title, description, requiredExp });
     } else {
       setIsExpanded(true);
     }
@@ -58,7 +58,7 @@ export const CaseCard = memo(function CaseCard({
     setIsExpanded(false);
     // Уведомляем родительский компонент о закрытии карточки
     if (onExpandCase) {
-      onExpandCase(false, { number, title, description });
+      onExpandCase(false, { number, title, description, requiredExp });
     }
   };
 
@@ -254,39 +254,16 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   const contentRef = useRef<HTMLDivElement>(null);
   const [isResultCollapsed, setIsResultCollapsed] = useState(false);
   const [sqlQuery, setSqlQuery] = useState("");
-  const [queryResult, setQueryResult] = useState<string | null>(null);
-  const [notes, setNotes] = useState("");
+  const [queryResult, setQueryResult] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-
-  // Загружаем заметки при монтировании компонента или смене пользователя
-  useEffect(() => {
-    if (user) {
-      const savedNotes = localStorage.getItem(`case_notes_${user.username}_${number}`);
-      if (savedNotes) {
-        setNotes(savedNotes);
-      } else {
-        setNotes(""); // Очищаем заметки, если их нет для текущего пользователя
-      }
-    } else {
-      setNotes(""); // Очищаем заметки, если пользователь не авторизован
-    }
-  }, [number, user]);
-
-  // Сохраняем заметки при изменении
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newNotes = e.target.value;
-    setNotes(newNotes);
-    if (user) {
-      localStorage.setItem(`case_notes_${user.username}_${number}`, newNotes);
-    }
-  };
 
   const handleClose = () => {
     setIsClosing(true);
-    // Задержка для отображения анимации закрытия
     setTimeout(() => {
       onClose();
-    }, 500); // Длительность анимации в globals.css
+    }, 500);
   };
 
   const toggleResultPanel = () => {
@@ -297,30 +274,72 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
     setSqlQuery(e.target.value);
   };
 
-  const executeQuery = () => {
-    // Здесь будет логика выполнения SQL-запроса
-    // Пока сделаем заглушку
-    if (sqlQuery.trim() === "") {
-      setQueryResult("Запрос пуст. Пожалуйста, введите SQL-запрос.");
+  const executeQuery = async () => {
+    if (!sqlQuery.trim()) {
+      setError("SQL запрос не может быть пустым");
       return;
     }
     
-    // Имитация выполнения запроса
-    setQueryResult("Запрос выполняется...");
+    setIsLoading(true);
+    setError(null);
     
-    // Имитация задержки с сервера
-    setTimeout(() => {
-      if (sqlQuery.toLowerCase().includes("select") && sqlQuery.toLowerCase().includes("from")) {
-        setQueryResult(`Результат запроса: 
-| id | name | value |
-|----|------|-------|
-| 1  | John | 100   |
-| 2  | Anna | 200   |
-| 3  | Mike | 150   |`);
-      } else {
-        setQueryResult("Ошибка в запросе. Убедитесь, что вы используете правильный синтаксис SQL.");
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Необходима авторизация');
       }
-    }, 500);
+
+      // Отправляем запрос на выполнение
+      const response = await fetch(`https://sqlhunt.com:8000/api/cases/${number}/execute-sql/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ sql: sqlQuery }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ошибка выполнения запроса');
+      }
+
+      // Получаем task_id и начинаем опрашивать статус
+      const taskId = data.task_id;
+      let result = null;
+
+      while (true) {
+        const statusResponse = await fetch(`https://sqlhunt.com:8000/api/tasks/${taskId}/status/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const statusData = await statusResponse.json();
+
+        if (statusData.status === 'SUCCESS') {
+          result = statusData.result;
+          break;
+        } else if (statusData.status === 'FAILURE') {
+          throw new Error(statusData.error || 'Задача завершилась с ошибкой');
+        }
+
+        // Ждем 1 секунду перед следующим запросом
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      if (result && result.error) {
+        throw new Error(result.error);
+      }
+
+      setQueryResult(result);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Произошла неизвестная ошибка');
+      setQueryResult(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -395,12 +414,15 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                   SQL запрос
                 </div>
                 <button 
-                  className="px-2 py-0.5 m-1 mr-2 text-black flex items-center justify-center gap-1 text-sm"
+                  className={`px-2 py-0.5 m-1 mr-2 text-black flex items-center justify-center gap-1 text-sm ${
+                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                   style={{ backgroundColor: 'rgba(255, 168, 16, 0.6)', fontFamily: "var(--font-rationalist-light)" }}
                   onClick={executeQuery}
+                  disabled={isLoading}
                 >
                   <Play className="w-3 h-3 stroke-[2]" />
-                  Выполнить
+                  {isLoading ? 'Выполняется...' : 'Выполнить'}
                 </button>
               </div>
               {/* Поле для ввода SQL */}
@@ -423,9 +445,9 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                 onClick={toggleResultPanel}
               >
                 <div className="p-2 font-bold text-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
-                  Результат
+                  Результат {error ? '(Ошибка)' : ''}
                 </div>
-                <button className="px-3 py-1 m-1 text-black" style={{ background: 'none', fontFamily: "var(--font-rationalist-light)" }} onClick={toggleResultPanel}>
+                <button className="px-3 py-1 m-1 text-black" style={{ background: 'none', fontFamily: "var(--font-rationalist-light)" }}>
                   {isResultCollapsed ? <ChevronDown className="w-4 h-4 stroke-[2]" /> : <ChevronUp className="w-4 h-4 stroke-[2]" />}
                 </button>
               </div>
@@ -441,48 +463,47 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                 }}
               >
                 <div className="p-4 h-full">
-                  {queryResult ? (
-                    <pre className="whitespace-pre-wrap text-sm text-white" style={{ fontFamily: "var(--font-rationalist-light)" }}>{queryResult}</pre>
+                  {error ? (
+                    <div className="text-red-500 whitespace-pre-wrap text-sm" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                      {error}
+                    </div>
+                  ) : queryResult ? (
+                    <div className="text-white">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr>
+                            {queryResult.columns.map((column: string) => (
+                              <th key={column} className="text-left p-2 border-b border-gray-600">
+                                {column}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {queryResult.rows.map((row: any[], rowIndex: number) => (
+                            <tr key={rowIndex}>
+                              {row.map((cell, cellIndex) => (
+                                <td key={cellIndex} className="p-2 border-b border-gray-600">
+                                  {cell}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   ) : (
-                    <div className="text-gray-400 italic" style={{ fontFamily: "var(--font-rationalist-light)" }}>Строк нет. Выполните запрос, чтобы увидеть результат.</div>
+                    <div className="text-gray-400 italic" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                      Строк нет. Выполните запрос, чтобы увидеть результат.
+                    </div>
                   )}
                 </div>
               </div>
             </div>
           </div>
         )}
-        {activeTab === "Схема БД" && (
-          <div className="text-center p-10">
-            <p>Здесь будет отображаться схема базы данных</p>
-          </div>
-        )}
-        {activeTab === "Заметки" && (
-          <div>
-            <textarea
-              className="w-full h-full p-4 border border-gray-300"
-              placeholder="Ваши заметки по делу..."
-              style={{ fontFamily: "var(--font-rationalist-light)" }}
-              value={notes}
-              onChange={handleNotesChange}
-            ></textarea>
-          </div>
-        )}
-        {activeTab === "Ответы" && (
-          <div className="p-4">
-            <div className="mb-4">
-              <label className="block mb-2 font-bold" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
-                Ваш ответ:
-              </label>
-              <input
-                type="text"
-                className="w-full p-2 border border-gray-300"
-                placeholder="Введите ваш ответ..."
-                style={{ fontFamily: "var(--font-rationalist-light)" }}
-              />
-            </div>
-            <button className="px-4 py-2 bg-black text-white">Проверить</button>
-          </div>
-        )}
+
+        {/* ... other tabs content ... */}
       </div>
     </div>
   );

@@ -7,7 +7,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from users.models import UserProgress
+from users.models import UserProgress, User
+from investigations.models import Case, Person, Suspect, CrimeScene, Evidence, Alibi
 
 from services.answer_checker import check_answer
 from services.schema_creator import get_schema
@@ -30,7 +31,7 @@ class ExecuteSQLView(APIView):
         if not sql:
             return Response({"error": "Поле 'sql' не может быть пустым"}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = request.user
+        user = User.objects.get(id=request.user.id)
         case = request.case  
 
         try:
@@ -39,7 +40,7 @@ class ExecuteSQLView(APIView):
             return Response({"error": "Прогресс по делу не найден"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            task = execute_safe_sql.delay(user.id, case.id, sql) # type: ignore
+            task = execute_safe_sql.delay(user.id, case.id, sql)
         except Exception as e:
             return Response({"error": f"Ошибка запуска задачи: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -67,3 +68,55 @@ class SubmitAnswerView(APIView):
         answer = request.data.get("answer", "")
         success = check_answer(answer=answer, user_id=request.user.id, case_id=request.case.id)
         return Response({"correct": success})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_case_details(request, case_id):
+    try:
+        case = Case.objects.using('investigations').get(id=case_id)
+        suspects = Suspect.objects.using('investigations').filter(cases=case).select_related('person')
+        crime_scenes = CrimeScene.objects.using('investigations').filter(case=case)
+        evidence = Evidence.objects.using('investigations').filter(scene__case=case)
+        alibis = Alibi.objects.using('investigations').filter(case=case).select_related('suspect', 'suspect__person')
+
+        case_data = {
+            'id': case.id,
+            'description': case.description,
+            'type': case.type,
+            'status': case.status,
+            'date_opened': case.date_opened,
+            'date_closed': case.date_closed,
+            'suspects': [{
+                'id': suspect.id,
+                'status': suspect.status,
+                'person': {
+                    'name': suspect.person.name,
+                    'description': suspect.person.description,
+                }
+            } for suspect in suspects],
+            'crime_scenes': [{
+                'id': scene.id,
+                'location': scene.location,
+                'date': scene.date,
+                'evidence': [{
+                    'id': e.id,
+                    'type': e.type,
+                    'description': e.description,
+                    'date': e.date
+                } for e in evidence if e.scene_id == scene.id]
+            } for scene in crime_scenes],
+            'alibis': [{
+                'id': alibi.id,
+                'status': alibi.status,
+                'description': alibi.description,
+                'suspect': {
+                    'name': alibi.suspect.person.name,
+                    'status': alibi.suspect.status
+                }
+            } for alibi in alibis]
+        }
+        
+        return Response(case_data)
+    except Case.DoesNotExist:
+        return Response({'error': 'Case not found'}, status=status.HTTP_404_NOT_FOUND)

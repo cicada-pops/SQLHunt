@@ -1,19 +1,21 @@
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import authService from '../services/auth';
+import authService, { AuthResponse } from '../services/auth';
 
 // Тип пользователя
-interface User {
+export interface User {
+  id: number;
   username: string;
   email: string;
-  registrationDate: string;
   experience: number;
+  token: string;
+  registrationDate: string;
 }
 
 // Тип контекста авторизации
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<boolean>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -22,7 +24,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
-  login: async () => {},
+  login: async () => false,
   register: async () => {},
   logout: () => {},
 });
@@ -39,13 +41,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       if (authService.isAuthenticated()) {
         const userData = await authService.getCurrentUser();
-        setUser({
-          username: userData.username,
-          email: userData.email,
-          registrationDate: new Date().toISOString(),
-          experience: userData.experience
-        });
-        setIsAuthenticated(true);
+        const token = authService.getToken();
+        if (userData && token) {
+          setUser({
+            id: userData.id,
+            username: userData.username,
+            email: userData.email,
+            experience: userData.experience,
+            token: token,
+            registrationDate: new Date().toISOString()
+          });
+          setIsAuthenticated(true);
+        }
       } else {
         setUser(null);
         setIsAuthenticated(false);
@@ -79,10 +86,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated]);
 
   // Функция для авторизации
-  const login = async (username: string, password: string) => {
-    const response = await authService.login({ username, password });
-    setIsAuthenticated(true);
-    await updateUserData();
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch('https://sqlhunt.com:8000/api/auth/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        // Сохраняем токены в localStorage
+        localStorage.setItem('token', userData.token.access);
+        localStorage.setItem('refreshToken', userData.token.refresh);
+        localStorage.setItem('user', JSON.stringify(userData.user));
+
+        setUser({
+          id: userData.id,
+          username: userData.username,
+          email: userData.email,
+          experience: userData.experience,
+          token: userData.token.access,
+          registrationDate: new Date().toISOString()
+        });
+        setIsAuthenticated(true);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
   };
 
   // Функция для регистрации
@@ -104,17 +140,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(false);
   };
 
-  // Значение контекста
-  const value = {
-    user,
-    isAuthenticated,
-    login,
-    register,
-    logout,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated,
+      login,
+      register,
+      logout,
+    }}>
       {children}
     </AuthContext.Provider>
   );
