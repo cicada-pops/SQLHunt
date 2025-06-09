@@ -1,31 +1,72 @@
 import logging
 
+from allauth.socialaccount.providers.github.views import GitHubOAuth2Adapter
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from config.settings import GITHUB_CALLBACK_URL, GOOGLE_CALLBACK_URL
+from dj_rest_auth.registration.views import SocialLoginView
 from django.contrib import messages
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, get_user_model, login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.tokens import default_token_generator
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from users.models import User as UserXP
-from django.contrib.auth.forms import PasswordResetForm
-from django.utils.translation import gettext as _
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_str
-from django.contrib.auth import get_user_model
-from rest_framework.exceptions import ValidationError
 
-from .forms import LoginForm, ProfileEditForm, UserEditForm, UserRegistrationForm
-from .models import Profile
-from .serializers import UserRegistrationSerializer, UserSerializer, PasswordResetSerializer
+from .forms import LoginForm, UserEditForm, UserRegistrationForm
+from .serializers import (
+    PasswordResetSerializer,
+    UserRegistrationSerializer,
+    UserSerializer,
+)
 
 logger = logging.getLogger(__name__)
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    callback_url = GOOGLE_CALLBACK_URL
+    client_class = OAuth2Client
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        user = self.user
+        if user and user.is_authenticated:
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            })
+
+        return response 
+
+class GitHubLogin(SocialLoginView):
+    adapter_class = GitHubOAuth2Adapter
+    callback_url = GITHUB_CALLBACK_URL
+    client_class = OAuth2Client
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        user = self.user
+        if user and user.is_authenticated:
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            })
+
+        return response
 
 @require_GET
 @ensure_csrf_cookie
@@ -110,11 +151,11 @@ def user_login(request):
                 return HttpResponse('Invalid login')
     else:
         form = LoginForm()
-    return render(request, 'account/login.html', {'form': form})
+    return render(request, 'authentication/login.html', {'form': form})
             
 @login_required
 def dashboard(request):
-    return render(request, 'account/dashboard.html', {'section': 'dashboard'})
+    return render(request, 'authentication/dashboard.html', {'section': 'dashboard'})
 
 def register(request):
     if request.method == 'POST':
@@ -123,11 +164,11 @@ def register(request):
             new_user = user_form.save(commit=False)
             new_user.set_password(user_form.cleaned_data['password'])
             new_user.save()
-            Profile.objects.create(user=new_user)
-            return render(request, 'account/register_done.html', {'new_user': new_user})
+            UserXP.objects.create(id=new_user.pk)
+            return render(request, 'authentication/register_done.html', {'new_user': new_user})
     else:
         user_form = UserRegistrationForm()
-    return render(request, 'account/register.html', {'user_form': user_form})
+    return render(request, 'authentication/register.html', {'user_form': user_form})
 
 
 @login_required
@@ -135,23 +176,17 @@ def edit(request):
     if request.method == 'POST':
         user_form = UserEditForm(instance=request.user, 
                                  data=request.POST)
-        profile_form = ProfileEditForm(instance=request.user.profile, data=request.POST, 
-                                       files=request.FILES)
-        
-        if user_form.is_valid() and profile_form.is_valid():
+        if user_form.is_valid():
             user_form.save()
-            profile_form.save()
-            messages.success(request, 'Profile updated successfully')
+            messages.success(request, 'User updated successfully')
         else:
-            messages.error(request, 'Error updating your profile')
+            messages.error(request, 'Error updating User')
     else:
         user_form = UserEditForm(instance=request.user)
-        profile_form = ProfileEditForm(instance=request.user.profile)
         
     return render(request,
-                    'account/edit.html',
-                    {'user_form': user_form,
-                    'profile_form': profile_form})
+                    'authentication/edit.html',
+                    {'user_form': user_form})
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -184,7 +219,7 @@ def api_password_reset(request):
     """
     serializer = PasswordResetSerializer(data=request.data)
     if serializer.is_valid():
-        email = serializer.validated_data['email']
+        email = serializer.validated_data['email'] # type: ignore
         form = PasswordResetForm({'email': email})
         if form.is_valid():
             form.save(
@@ -221,8 +256,8 @@ def api_password_reset_confirm(request):
         
         return Response({'detail': 'Password has been reset successfully'})
         
-    except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist) as e:
-        raise ValidationError('Invalid reset link')
+    except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist) as e: # type: ignore
+        raise ValidationError(f'Invalid reset link: {str(e)}')
     except Exception as e:
         logger.error(f"Password reset confirmation error: {str(e)}")
         raise ValidationError('Password reset failed')

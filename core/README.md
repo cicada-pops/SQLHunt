@@ -82,10 +82,10 @@
 
    ```bash
    python3 manage.py makemigrations
-   python3 manage.py migrate --database=auth
-   python3 manage.py migrate --database=users
-   python3 manage.py migrate --database=investigations
-   python3 manage.py migrate --database=celery_results
+   python3 manage.py migrate authentication --database=auth
+   python3 manage.py migrate users --database=users
+   python3 manage.py migrate investigations --database=investigations
+   python3 manage.py migrate --database=celery
    ```
    Примечание: Так как база данных default пуста, то при каждом запуске migrate необходимо вручную указывать имя базы данных.
 
@@ -101,7 +101,13 @@
    ```bash
    python3 manage.py createsuperuser --database=auth
    ```
-7. Запустите сервер разработки:
+
+7. Запустите celery:
+   ```
+   celery -A celery_app worker --loglevel=info
+   ```
+
+8. Запустите сервер разработки:
 
    ```bash
    python3 manage.py runserver_plus sqlhunt.com:8000 --cert-file cert.crt

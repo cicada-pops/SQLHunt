@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db.models import Q
-from account.models import Profile
+from users.models import User as UsersUser
+
 
 class EmailAuthBackend:
     def authenticate(self, request, username=None, password=None, **kwargs):
@@ -17,5 +18,9 @@ class EmailAuthBackend:
         except User.DoesNotExist:
             return None
     
-def create_profile(backend, user, *args, **kwargs):
-    Profile.objects.get_or_create(user=user)
+def create_users_user(backend, user, *args, **kwargs):
+    if user is None:
+        print("User is None, skipping UsersUser creation")
+        return
+    print(f"Creating UsersUser with id={user.pk}")
+    UsersUser.objects.using('users').get_or_create(id=user.pk)

@@ -30,24 +30,33 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+REST_USE_JWT = True
+TOKEN_MODEL = None
+
 ALLOWED_HOSTS = ['sqlhunt.com', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'users',          
     'investigations',
-    'account',
+    'authentication',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'social_django',
     'django_extensions',
+    'dj_rest_auth',
     'rest_framework',
+    'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'corsheaders',
     'django_celery_results',
+    "allauth",
+    "allauth.account",
+    'allauth.socialaccount',
+    "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.github", 
 ]
 
 MIDDLEWARE = [
@@ -68,6 +77,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://sqlhunt.com:8000",
+    "https://sqlhunt.com:8000",
 ]
 
 CORS_ALLOW_METHODS = [
@@ -95,7 +105,7 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://sqlhunt.com:8000",
+    "https://sqlhunt.com:8000",
 ]
 
 CSRF_COOKIE_SAMESITE = None  # Changed from 'Lax' to None
@@ -109,11 +119,6 @@ CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
 SESSION_COOKIE_SAMESITE = None  # Changed from 'Lax' to None
 SESSION_COOKIE_SECURE = False  # Set to True in production
 SESSION_COOKIE_HTTPONLY = True
-
-# REST_AUTH = {
-#     "USE_JWT": True,
-#     "JWT_AUTH_HTTPONLY": False,
-# }
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -170,7 +175,17 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {},
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'auth_db',
+        'USER': os.getenv('DB_AUTH_USER'),
+        'PASSWORD': os.getenv('DB_AUTH_PASSWORD'),
+        'HOST': os.getenv('DB_AUTH_HOST'),
+        'PORT': os.getenv('DB_AUTH_PORT'),
+        'TEST': {
+            'DEPENDENCIES': [], 
+        },
+    },
     'investigations': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'investigations_db',  
@@ -215,7 +230,7 @@ DATABASES = {
 }
 
 DATABASE_ROUTERS = [
-    'config.routers.AccountRouter',
+    'config.routers.AuthenticationRouter',
     'config.routers.InvestigationsRouter',
     'config.routers.UsersRouter',
     'config.routers.CeleryResultsRouter',
@@ -300,28 +315,47 @@ LOGGING = {
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'account.authentication.EmailAuthBackend',
-    'social_core.backends.google.GoogleOAuth2',
-    'social_core.backends.github.GithubOAuth2',
+    'authentication.authentication.EmailAuthBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 )
 
-SOCIAL_AUTH_PIPELINE = [ 'social_core.pipeline.social_auth.social_details', 
-                        'social_core.pipeline.social_auth.social_uid', 
-                        'social_core.pipeline.social_auth.auth_allowed', 
-                        'social_core.pipeline.social_auth.social_user', 
-                        'social_core.pipeline.user.get_username', 
-                        'social_core.pipeline.user.create_user',
-                        'account.authentication.create_profile',
-                        'social_core.pipeline.social_auth.associate_user', 
-                        'social_core.pipeline.social_auth.load_extra_data', 
-                        'social_core.pipeline.user.user_details',
-]
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY'), 
+            "secret": os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET'),       
+            "key": "",                               
+        },
+        "SCOPE": [
+            "profile",
+            "email",
+        ],
+        "AUTH_PARAMS": {
+            "access_type": "online",
+        },
+        "VERIFIED_EMAIL": True,
+    },
+    "github": {
+        "APP": {
+            "client_id": os.getenv('SOCIAL_AUTH_GITHUB_KEY'),
+            "secret": os.getenv('SOCIAL_AUTH_GITHUB_SECRET'),        
+            "key": "",                                
+        },
+        "SCOPE": [
+            "user",
+            "email",
+        ],
+        "VERIFIED_EMAIL": True,
+    },
+}
 
-SOCIAL_AUTH_GITHUB_KEY = os.getenv('SOCIAL_AUTH_GITHUB_KEY')
-SOCIAL_AUTH_GITHUB_SECRET = os.getenv('SOCIAL_AUTH_GITHUB_SECRET')
+SITE_ID = 1
+SOCIALACCOUNT_AUTO_SIGNUP = False
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
+
+GOOGLE_CALLBACK_URL = "http://localhost:3000/"
+GITHUB_CALLBACK_URL = "http://localhost:3000/"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

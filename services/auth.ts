@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sqlhunt.com:8000';
-const API_URL = `${BASE_URL}/account/api`;
+const API_URL = `${BASE_URL}/authentication/api`;
 
 // Настраиваем axios для работы с CSRF
 axios.defaults.xsrfCookieName = 'csrftoken';
@@ -16,7 +16,7 @@ interface CSRFResponse {
 async function getCSRFToken() {
   try {
     // Делаем GET запрос к Django для получения CSRF токена
-    const response = await axios.get<CSRFResponse>(`${BASE_URL}/account/api/csrf/`);
+    const response = await axios.get<CSRFResponse>(`${BASE_URL}/authentication/api/csrf/`);
     const csrfToken = response.data.csrfToken;
     axios.defaults.headers.common['X-CSRFToken'] = csrfToken;
     console.log('CSRF token received:', csrfToken);
