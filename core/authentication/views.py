@@ -36,20 +36,35 @@ logger = logging.getLogger(__name__)
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
-    callback_url = GOOGLE_CALLBACK_URL
     client_class = OAuth2Client
+    callback_url = GOOGLE_CALLBACK_URL
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs): # type: ignore
+        access_token = request.data.get("access_token")
+        if not access_token:
+            return Response({"detail": "access_token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.data._mutable = True  # если request.data - QueryDict, чтобы его можно было менять
+        request.data['access_token'] = access_token
+        request.data['code'] = access_token  # иногда allauth требует поле "code"
+        request.data._mutable = False
+
         response = super().post(request, *args, **kwargs)
-        user = self.user
+
+        user = getattr(self, 'user', None)
         if user and user.is_authenticated:
             refresh = RefreshToken.for_user(user)
             return Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                }
             })
 
-        return response 
+        return response
 
 class GitHubLogin(SocialLoginView):
     adapter_class = GitHubOAuth2Adapter

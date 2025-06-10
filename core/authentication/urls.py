@@ -40,6 +40,6 @@ urlpatterns = [
     
     path('register/', views.register, name='register'),
     path('edit/', views.edit, name='edit'),
-    path("api/google/", views.GoogleLogin.as_view(), name="google_login"),
-    path("api/github/", views.GitHubLogin.as_view(), name="github_login"), 
+    path("api/google-login/", views.GoogleLogin.as_view(), name="google_login"),
+    path("api/github-login/", views.GitHubLogin.as_view(), name="github_login"), 
 ]

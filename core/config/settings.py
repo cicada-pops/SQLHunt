@@ -68,6 +68,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+     "allauth.account.middleware.AccountMiddleware",
 ]
 
 # CORS settings
@@ -333,7 +334,6 @@ SOCIALACCOUNT_PROVIDERS = {
         "AUTH_PARAMS": {
             "access_type": "online",
         },
-        "VERIFIED_EMAIL": True,
     },
     "github": {
         "APP": {
@@ -345,13 +345,16 @@ SOCIALACCOUNT_PROVIDERS = {
             "user",
             "email",
         ],
-        "VERIFIED_EMAIL": True,
     },
 }
 
 SITE_ID = 1
-SOCIALACCOUNT_AUTO_SIGNUP = False
-
+ACCOUNT_AUTHENTICATION_METHOD = "email" 
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = "none" 
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
 GOOGLE_CALLBACK_URL = "http://localhost:3000/"
 GITHUB_CALLBACK_URL = "http://localhost:3000/"
