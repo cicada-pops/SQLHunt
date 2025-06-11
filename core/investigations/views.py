@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from users.models import UserProgress, User
+from users.models import UserProgress, User, Case as UserCase
 from investigations.models import Case, Person, Suspect, CrimeScene, Evidence, Alibi
 
 from services.answer_checker import check_answer
@@ -120,3 +120,25 @@ def get_case_details(request, case_id):
         return Response(case_data)
     except Case.DoesNotExist:
         return Response({'error': 'Case not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_case_list(request):
+    """
+    Возвращает список всех доступных дел с их основной информацией.
+    """
+    cases = UserCase.objects.using('users').all()
+    case_list = [
+        {
+            'id': case.id,
+            'title': case.title,
+            'description': case.description,
+            'short_description': case.short_description,
+            'investigation_plan': case.investigation_plan,
+            'required_xp': case.required_xp,
+            'reward_xp': case.reward_xp,
+        }
+        for case in cases
+    ]
+    return Response(case_list)

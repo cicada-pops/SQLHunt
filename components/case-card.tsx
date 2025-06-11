@@ -4,15 +4,39 @@ import { X, Play, ChevronUp, ChevronDown } from "lucide-react"
 import { memo, useState, useRef, useEffect } from "react"
 import { useAuth } from "../contexts/auth-context"
 
+// Функция для нормализации текста
+const normalizeText = (text?: string) => {
+  if (!text) return '';
+  return text
+    .trim()
+    // Заменяем множественные пустые строки на одну
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    // Убираем пробелы в начале строк
+    .replace(/^\s+/gm, '')
+    // Убираем пробелы в конце строк
+    .replace(/\s+$/gm, '');
+};
+
 interface CaseCardProps {
   number: string
   title: string
   description: string
+  fullDescription?: string
+  investigationPlan?: string
   isMarked: boolean
   className?: string
   requiredExp: number
+  rewardXp: number
   userExp: number
-  onExpandCase?: (isExpanded: boolean, caseData: { number: string; title: string; description: string; requiredExp: number }) => void
+  onExpandCase?: (isExpanded: boolean, caseData: { 
+    number: string; 
+    title: string; 
+    description: string; 
+    fullDescription?: string;
+    investigationPlan?: string;
+    requiredExp: number;
+    rewardXp: number;
+  }) => void
 }
 
 // Используем memo для предотвращения ненужных перерендеров
@@ -20,8 +44,11 @@ export const CaseCard = memo(function CaseCard({
   number, 
   title, 
   description, 
+  fullDescription,
+  investigationPlan,
   isMarked,
   requiredExp,
+  rewardXp,
   userExp, 
   className = "",
   onExpandCase
@@ -48,7 +75,7 @@ export const CaseCard = memo(function CaseCard({
     
     // Уведомляем родительский компонент об открытии карточки
     if (onExpandCase) {
-      onExpandCase(true, { number, title, description, requiredExp });
+      onExpandCase(true, { number, title, description, fullDescription, investigationPlan, requiredExp, rewardXp });
     } else {
       setIsExpanded(true);
     }
@@ -58,7 +85,7 @@ export const CaseCard = memo(function CaseCard({
     setIsExpanded(false);
     // Уведомляем родительский компонент о закрытии карточки
     if (onExpandCase) {
-      onExpandCase(false, { number, title, description, requiredExp });
+      onExpandCase(false, { number, title, description, fullDescription, investigationPlan, requiredExp, rewardXp });
     }
   };
 
@@ -82,7 +109,10 @@ export const CaseCard = memo(function CaseCard({
             <h3 className="font-bold" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Дело №{number}: {title}</h3>
           </div>
 
-          <p className="text-sm mb-4 text-justify" style={{ fontFamily: "var(--font-rationalist-light)" }}>{description}</p>
+          <p className="text-sm mb-4 text-justify whitespace-pre-line" style={{ 
+            fontFamily: "var(--font-rationalist-light)",
+            lineHeight: "1.5"
+          }}>{normalizeText(description)}</p>
 
           <div className="text-right">
             <span 
@@ -130,7 +160,10 @@ export const CaseCard = memo(function CaseCard({
             </div>
           ) : (
             <>
-              <p className="text-sm mb-4 text-justify" style={{ fontFamily: "var(--font-rationalist-light)" }}>{description}</p>
+              <p className="text-sm mb-4 text-justify whitespace-pre-line" style={{ 
+                fontFamily: "var(--font-rationalist-light)",
+                lineHeight: "1.5"
+              }}>{normalizeText(description)}</p>
               <div className="text-right">
                 <span 
                   className="inline-block relative font-bold group"
@@ -182,7 +215,10 @@ export const CaseCard = memo(function CaseCard({
             <h3 className="font-bold" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Дело №{number}: {title}</h3>
           </div>
 
-          <p className="text-sm mb-4 text-justify" style={{ fontFamily: "var(--font-rationalist-light)" }}>{description}</p>
+          <p className="text-sm mb-4 text-justify whitespace-pre-line" style={{ 
+            fontFamily: "var(--font-rationalist-light)",
+            lineHeight: "1.5"
+          }}>{normalizeText(description)}</p>
 
           <div className="text-right">
             {isLocked ? (
@@ -226,6 +262,9 @@ export const CaseCard = memo(function CaseCard({
             number={number} 
             title={title} 
             description={description} 
+            fullDescription={fullDescription}
+            investigationPlan={investigationPlan}
+            rewardXp={rewardXp}
             onClose={handleCloseCase} 
           />
         </div>
@@ -239,12 +278,18 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   number,
   title,
   description,
+  fullDescription,
+  investigationPlan,
+  rewardXp,
   onClose,
   className = ""
 }: {
   number: string;
   title: string;
   description: string;
+  fullDescription?: string;
+  investigationPlan?: string;
+  rewardXp: number;
   onClose: () => void;
   className?: string;
 }) {
@@ -362,26 +407,60 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
 
       {/* Заголовок и описание дела */}
       <div className="mb-8 border-b-2 border-black pb-4">
-        <div className="flex items-center mb-2">
-          <h2 className="text-2xl font-bold mb-4" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
             Дело №{number}: {title}
           </h2>
+          <div className="text-xl" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
+            Награда: {rewardXp} XP
+          </div>
         </div>
-        <p className="text-lg mb-6" style={{ fontFamily: "var(--font-rationalist-light)" }}>
-          {description}
-        </p>
 
-        {/* Цели/подсказки */}
-        <div className="mt-6">
-          <h4 className="text-xl font-bold mb-3" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
-            Цели расследования:
-          </h4>
-          <ul className="list-disc list-inside space-y-2">
-            <li>Найти ключевые улики в базе данных</li>
-            <li>Определить подозреваемых на основе данных</li>
-            <li>Установить мотив преступления</li>
-          </ul>
-        </div>
+        {/* Полное описание */}
+        {fullDescription && (
+          <div className="mb-6">
+            <p className="text-lg whitespace-pre-line" style={{ 
+              fontFamily: "var(--font-rationalist-light)",
+              lineHeight: "1.6"
+            }}>
+              {normalizeText(fullDescription)}
+            </p>
+          </div>
+        )}
+
+        {/* Краткое описание */}
+        {description && description !== fullDescription && (
+          <div className="mb-6">
+            <p className="text-lg whitespace-pre-line" style={{ 
+              fontFamily: "var(--font-rationalist-light)",
+              lineHeight: "1.6"
+            }}>
+              {normalizeText(description)}
+            </p>
+          </div>
+        )}
+
+        {/* План расследования */}
+        {investigationPlan && (
+          <div className="mt-6">
+            <p className="text-lg whitespace-pre-line" style={{ 
+              fontFamily: "var(--font-rationalist-light)",
+              lineHeight: "1.6"
+            }}>
+              {normalizeText(investigationPlan).split('\n').map((line, index) => (
+                index === 0 ? (
+                  <span key={index} className="font-bold block" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
+                    {line}
+                  </span>
+                ) : (
+                  <span key={index} className="block">
+                    {line}
+                  </span>
+                )
+              ))}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Вкладки */}
