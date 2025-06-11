@@ -1,10 +1,9 @@
 import logging
 
-from allauth.socialaccount.providers.github.views import GitHubOAuth2Adapter
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from config.settings import GITHUB_CALLBACK_URL, GOOGLE_CALLBACK_URL
 from dj_rest_auth.registration.views import SocialLoginView
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login
 from django.contrib.auth.decorators import login_required
@@ -36,52 +35,8 @@ logger = logging.getLogger(__name__)
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
+    callback_url = settings.GOOGLE_OAUTH_CALLBACK_URL
     client_class = OAuth2Client
-    callback_url = GOOGLE_CALLBACK_URL
-
-    def post(self, request, *args, **kwargs): # type: ignore
-        access_token = request.data.get("access_token")
-        if not access_token:
-            return Response({"detail": "access_token is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        request.data._mutable = True  # если request.data - QueryDict, чтобы его можно было менять
-        request.data['access_token'] = access_token
-        request.data['code'] = access_token  # иногда allauth требует поле "code"
-        request.data._mutable = False
-
-        response = super().post(request, *args, **kwargs)
-
-        user = getattr(self, 'user', None)
-        if user and user.is_authenticated:
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-                'user': {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                }
-            })
-
-        return response
-
-class GitHubLogin(SocialLoginView):
-    adapter_class = GitHubOAuth2Adapter
-    callback_url = GITHUB_CALLBACK_URL
-    client_class = OAuth2Client
-
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        user = self.user
-        if user and user.is_authenticated:
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            })
-
-        return response
 
 @require_GET
 @ensure_csrf_cookie

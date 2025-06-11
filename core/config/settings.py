@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'dj_rest_auth',
+    'dj_rest_auth.registration',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
@@ -76,7 +77,6 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://sqlhunt.com:8000",
     "https://sqlhunt.com:8000",
 ]
 
@@ -319,11 +319,25 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
+SITE_ID = 1
+
+ACCOUNT_AUTHENTICATION_METHOD = "email" 
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = "none" 
+
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
+GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
+GOOGLE_OAUTH_CALLBACK_URL = os.getenv("GOOGLE_OAUTH_CALLBACK_URL")
+
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
-        "APP": {
-            "client_id": os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY'), 
-            "secret": os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET'),       
+        "APPS": {
+            "client_id": GOOGLE_OAUTH_CLIENT_ID, 
+            "secret": GOOGLE_OAUTH_CLIENT_SECRET,       
             "key": "",                               
         },
         "SCOPE": [
@@ -334,29 +348,8 @@ SOCIALACCOUNT_PROVIDERS = {
             "access_type": "online",
         },
     },
-    "github": {
-        "APP": {
-            "client_id": os.getenv('SOCIAL_AUTH_GITHUB_KEY'),
-            "secret": os.getenv('SOCIAL_AUTH_GITHUB_SECRET'),        
-            "key": "",                                
-        },
-        "SCOPE": [
-            "user",
-            "email",
-        ],
-    },
 }
 
-SITE_ID = 1
-ACCOUNT_AUTHENTICATION_METHOD = "email" 
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = "none" 
-SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
-SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
-
-GOOGLE_CALLBACK_URL = "http://localhost:3000/"
-GITHUB_CALLBACK_URL = "http://localhost:3000/"
 
 
 # Default primary key field type
