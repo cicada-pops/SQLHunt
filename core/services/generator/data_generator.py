@@ -3,6 +3,7 @@ import os
 import random
 from datetime import datetime, timedelta
 
+from django.db import connections
 from django.utils import timezone
 from investigations.models import (
     Alibi,
@@ -285,9 +286,13 @@ class InvestigationsDataGenerator:
               self.case_suspects.append((case_id, sid))
 
     def clear_all_data(self):
-        models = [Evidence, Alibi, Statement, Suspect, Charge, CrimeScene, Article, Person, Case]
-        for model in models:
-            model.objects.using('investigations').all().delete()
+        tables = ['evidence', 'alibi', 'statement',
+                'suspect', 'charge', 'crime_scene',
+                'article', 'person', 'case']
+        
+        with connections['investigations'].cursor() as cursor:
+            for table in tables:
+                cursor.execute(f'TRUNCATE TABLE "{table}" RESTART IDENTITY CASCADE')
 
     def run(self, persons=1500, suspects=500, charges=100, statements=100):
         self.clear_all_data()

@@ -24,7 +24,7 @@ class BaseCase(ABC):
                         'description': self.description,
                         'required_xp': self.required_xp,
                         'reward_xp': self.reward_xp,
-                        'answer': "",
+                        'answer': self.answer,
                     }
                 )
 
@@ -37,11 +37,7 @@ class BaseCase(ABC):
                 investigation_case = self.create_investigation()
                 if investigation_case is None:
                     raise RuntimeError("Метод create_investigation() вернул None — кейс не создан")
-
-                if not hasattr(self, "answer") or self.answer is None:
-                    raise ValueError(f"Кейс '{self.title}': не установлен атрибут 'answer' после генерации")
-
-                case.answer = str(self.answer)
+                
                 case.save()
                 return True
 
@@ -52,5 +48,5 @@ class BaseCase(ABC):
             raise RuntimeError(f"Не удалось создать кейс '{self.title}': {type(e).__name__}: {e}") from e
 
     @abstractmethod
-    def create_investigation(self) -> InvestigationCase:
+    def create_investigation(self) -> InvestigationCase | None:
         pass

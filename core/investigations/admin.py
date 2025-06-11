@@ -15,7 +15,8 @@ from .models import (
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    search_fields = ['name', 'description']
+    list_display = ['id', 'name', 'description']
+    search_fields = ['id', 'name', 'description']
 
 @admin.register(Case)
 class CaseAdmin(admin.ModelAdmin):
@@ -23,6 +24,7 @@ class CaseAdmin(admin.ModelAdmin):
 
 @admin.register(Suspect)
 class SuspectAdmin(admin.ModelAdmin):
+    list_display = ['id', 'person__name']
     search_fields = ['person__name', 'status']
 
 @admin.register(Article)

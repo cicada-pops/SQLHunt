@@ -2,8 +2,7 @@ from datetime import date
 from random import sample
 
 from django.db import transaction
-from investigations.models import Alibi, CrimeScene, Evidence, Person, Suspect
-from investigations.models import Case as InvestigationCase
+from investigations.models import Alibi, Case, CrimeScene, Evidence, Person, Suspect
 
 from ..generator.utils.utils import get_date_of_birth, get_description
 from .base_case import BaseCase
@@ -32,10 +31,11 @@ class SilverKey(BaseCase):
         "evidence",
         "alibi",
     ]
+    answer = 337
 
     def create_investigation(self):
         with transaction.atomic(using='investigations'):
-          investigation_case = InvestigationCase.objects.using('investigations').create(
+          investigation_case = Case.objects.using('investigations').create(
               description = (
                   "Во время дождливой ночи в одном из номеров мотеля «Серебряный Ключ» предварительно произошло похищение. "
                   "Следователи зафиксировали следы борьбы: перевёрнутый стол, след обуви в крови, частично вырванный лист из блокнота. "
@@ -81,12 +81,14 @@ class SilverKey(BaseCase):
                   description=get_description(full_name, profession)
               )
 
+          Person.objects.using('investigations').filter(id=self.answer).delete()
+
           person = Person.objects.using('investigations').create(
+              id=self.answer,
               name="Дмитрий Романович Крылов",
               date_birth=date(1970, 5, 15),
               description="Худощявый мужчина 199 см. Прическа: каскад, рыжие волосы. Одет в: черная куртка, синие джинсы, коричневые лоферы с кисточками, перстень с печаткой. Особые приметы: татуировка в виде якоря на запястье, неестественно бледная кожа. Профессия: Электрик; Привычки: часто вздыхает."
           )
-          self.answer = person.id # type: ignore
 
           person = Person.objects.using('investigations').create(
               name="Федор Алексеевич Толстой",
