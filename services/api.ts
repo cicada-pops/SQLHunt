@@ -2,7 +2,7 @@ import axios from 'axios';
 import authService from './auth';
 
 const api = axios.create({
-  baseURL: 'http://sqlhunt.com:8000',
+  baseURL: 'https://sqlhunt.com:8000',
   headers: {
     'Content-Type': 'application/json',
   },
