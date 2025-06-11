@@ -50,8 +50,9 @@ if (typeof document !== 'undefined') {
 export default function Home() {
   // Получаем параметры из URL
   const searchParams = useSearchParams();
+  const caseId = searchParams.get('case');
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   // Ref для отслеживания первого рендера
   const isFirstRender = useRef(true);
@@ -60,15 +61,23 @@ export default function Home() {
   
   // Состояние для модального окна авторизации
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [pendingCaseData, setPendingCaseData] = useState<CaseData | null>(null);
-  const [casesList, setCasesList] = useState<CaseData[]>([]);
-  const [isLoadingCases, setIsLoadingCases] = useState(true);
+  const [casesList, setCasesList] = useState<Array<{
+    number: string;
+    title: string;
+    description: string;
+    fullDescription?: string;
+    investigationPlan?: string;
+    requiredExp: number;
+    rewardXp: number;
+  }>>([]);
+  const [caseTitles, setCaseTitles] = useState<string[]>([]); // Добавляем состояние для заголовков
+  const [isLoadingCases, setIsLoadingCases] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Состояние для отслеживания открытой карточки
   const [expandedCase, setExpandedCase] = useState<{
     isExpanded: boolean;
-    data: CaseData | null;
+    data: any;
     isClosing: boolean;
   }>({
     isExpanded: false,
@@ -169,17 +178,19 @@ export default function Home() {
         const data = await response.json();
         console.log('Получены дела:', data);
         
-        setCasesList(
-          data.map((item: any) => ({
-            number: String(item.id),
-            title: item.title,
-            description: item.short_description || item.description,
-            fullDescription: item.description,
-            investigationPlan: item.investigation_plan,
-            requiredExp: item.required_xp,
-            rewardXp: item.reward_xp,
-          }))
-        );
+        const cases = data.map((item: any) => ({
+          number: String(item.id),
+          title: item.title,
+          description: item.short_description || item.description,
+          fullDescription: item.description,
+          investigationPlan: item.investigation_plan,
+          requiredExp: item.required_xp,
+          rewardXp: item.reward_xp,
+        }));
+        
+        setCasesList(cases);
+        // Обновляем список заголовков
+        setCaseTitles(cases.map(c => c.title.toUpperCase()));
       } catch (e: any) {
         console.error('Ошибка при загрузке дел:', e);
         setFetchError(e.message || 'Ошибка загрузки');
@@ -201,22 +212,16 @@ export default function Home() {
   // Обработчик успешной авторизации
   const handleAuthSuccess = () => {
     setIsAuthModalOpen(false);
-    if (pendingCaseData) {
+    if (expandedCase.data) {
       // Проверяем, достаточно ли у пользователя опыта
       const userExp = user?.experience || 0;
-      if (userExp >= pendingCaseData.requiredExp) {
-        // Открываем отложенное дело после успешной авторизации
-        setExpandedCase({
-          isExpanded: true,
-          data: pendingCaseData,
-          isClosing: false
-        });
+      if (userExp >= expandedCase.data.requiredExp) {
+        // Открываем открытое дело после успешной авторизации
         setMainContentState('hidden');
-        setPageTitle(`Дело №${pendingCaseData.number}: ${pendingCaseData.title} - SQL Hunt`);
+        setPageTitle(`Дело №${expandedCase.data.number}: ${expandedCase.data.title} - SQL Hunt`);
         // Восстанавливаем URL с номером дела
-        router.push(`/?case=${pendingCaseData.number}`);
+        router.push(`/?case=${expandedCase.data.number}`);
       }
-      setPendingCaseData(null);
     }
   };
 
@@ -517,14 +522,16 @@ export default function Home() {
     <AuthProvider>
       <main className="min-h-screen flex flex-col p-10 relative">
         {/* Хедер (всегда видимый) */}
-        <Header onSmoothScroll={handleSmoothScroll} />
+        <Header 
+          onSmoothScroll={handleSmoothScroll}
+          caseTitles={caseTitles}
+        />
 
         {/* Модальное окно авторизации */}
         <AuthModal 
           isOpen={isAuthModalOpen} 
           onClose={() => {
             setIsAuthModalOpen(false);
-            setPendingCaseData(null);
           }}
           onAuthSuccess={handleAuthSuccess}
         />
