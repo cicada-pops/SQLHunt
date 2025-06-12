@@ -26,8 +26,6 @@ class User(TimeStampedModel):
 class Case(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
-    short_description = models.TextField(blank=True, null=True)
-    investigation_plan = models.TextField(blank=True, null=True)
     required_xp = models.IntegerField(validators=[MinValueValidator(0)])
     reward_xp = models.IntegerField(validators=[MinValueValidator(0)])
     answer = models.CharField(max_length=50)

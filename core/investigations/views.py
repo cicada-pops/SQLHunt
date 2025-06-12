@@ -149,8 +149,6 @@ def get_case_list(request):
             'id': case.id,
             'title': case.title,
             'description': case.description,
-            'short_description': case.short_description,
-            'investigation_plan': case.investigation_plan,
             'required_xp': case.required_xp,
             'reward_xp': case.reward_xp,
         }

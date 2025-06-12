@@ -127,8 +127,6 @@ interface CaseCardProps {
   number: string
   title: string
   description: string
-  fullDescription?: string
-  investigationPlan?: string
   isMarked: boolean
   className?: string
   requiredExp: number
@@ -138,8 +136,6 @@ interface CaseCardProps {
     number: string; 
     title: string; 
     description: string; 
-    fullDescription?: string;
-    investigationPlan?: string;
     requiredExp: number;
     rewardXp: number;
   }) => void
@@ -150,8 +146,6 @@ export const CaseCard = memo(function CaseCard({
   number, 
   title, 
   description, 
-  fullDescription,
-  investigationPlan,
   isMarked,
   requiredExp,
   rewardXp,
@@ -181,7 +175,7 @@ export const CaseCard = memo(function CaseCard({
     
     // Уведомляем родительский компонент об открытии карточки
     if (onExpandCase) {
-      onExpandCase(true, { number, title, description, fullDescription, investigationPlan, requiredExp, rewardXp });
+      onExpandCase(true, { number, title, description, requiredExp, rewardXp });
     } else {
       setIsExpanded(true);
     }
@@ -191,7 +185,7 @@ export const CaseCard = memo(function CaseCard({
     setIsExpanded(false);
     // Уведомляем родительский компонент о закрытии карточки
     if (onExpandCase) {
-      onExpandCase(false, { number, title, description, fullDescription, investigationPlan, requiredExp, rewardXp });
+      onExpandCase(false, { number, title, description, requiredExp, rewardXp });
     }
   };
 
@@ -368,8 +362,6 @@ export const CaseCard = memo(function CaseCard({
             number={number} 
             title={title} 
             description={description} 
-            fullDescription={fullDescription}
-            investigationPlan={investigationPlan}
             rewardXp={rewardXp}
             onClose={handleCloseCase} 
           />
@@ -384,8 +376,6 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   number,
   title,
   description,
-  fullDescription,
-  investigationPlan,
   rewardXp,
   onClose,
   className = ""
@@ -393,8 +383,6 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   number: string;
   title: string;
   description: string;
-  fullDescription?: string;
-  investigationPlan?: string;
   rewardXp: number;
   onClose: () => void;
   className?: string;
@@ -749,50 +737,14 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
         </div>
 
         {/* Полное описание */}
-        {fullDescription && (
-          <div className="mb-6">
-            <p className="text-lg whitespace-pre-line" style={{ 
-              fontFamily: "var(--font-rationalist-light)",
-              lineHeight: "1.6"
-            }}>
-              {normalizeText(fullDescription)}
-            </p>
-          </div>
-        )}
-
-        {/* Краткое описание */}
-        {description && description !== fullDescription && (
-          <div className="mb-6">
-            <p className="text-lg whitespace-pre-line" style={{ 
-              fontFamily: "var(--font-rationalist-light)",
-              lineHeight: "1.6"
-            }}>
-              {normalizeText(description)}
-            </p>
-          </div>
-        )}
-
-        {/* План расследования */}
-        {investigationPlan && (
-          <div className="mt-6">
-            <p className="text-lg whitespace-pre-line" style={{ 
-              fontFamily: "var(--font-rationalist-light)",
-              lineHeight: "1.6"
-            }}>
-              {normalizeText(investigationPlan).split('\n').map((line, index) => (
-                index === 0 ? (
-                  <span key={index} className="font-bold block" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
-                    {line}
-                  </span>
-                ) : (
-                  <span key={index} className="block">
-                    {line}
-                  </span>
-                )
-              ))}
-            </p>
-          </div>
-        )}
+        <div className="mb-6">
+          <p className="text-lg whitespace-pre-line" style={{ 
+            fontFamily: "var(--font-rationalist-light)",
+            lineHeight: "1.6"
+          }}>
+            {normalizeText(description)}
+          </p>
+        </div>
       </div>
 
       {/* Вкладки */}

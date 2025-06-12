@@ -12,11 +12,8 @@ interface CaseData {
   number: string;
   title: string;
   description: string;
-  fullDescription?: string;
-  investigationPlan?: string;
   requiredExp: number;
   rewardXp: number;
-  short_description?: string;
 }
 
 const styles = `
@@ -65,8 +62,6 @@ export default function Home() {
     number: string;
     title: string;
     description: string;
-    fullDescription?: string;
-    investigationPlan?: string;
     requiredExp: number;
     rewardXp: number;
   }>>([]);
@@ -181,9 +176,7 @@ export default function Home() {
         const cases = data.map((item: any) => ({
           number: String(item.id),
           title: item.title,
-          description: item.short_description || item.description,
-          fullDescription: item.description,
-          investigationPlan: item.investigation_plan,
+          description: item.description,
           requiredExp: item.required_xp,
           rewardXp: item.reward_xp,
         }));
@@ -473,8 +466,6 @@ export default function Home() {
                       number={caseItem.number}
                       title={caseItem.title}
                       description={caseItem.description}
-                      fullDescription={caseItem.fullDescription}
-                      investigationPlan={caseItem.investigationPlan}
                       isMarked={false}
                       requiredExp={caseItem.requiredExp}
                       rewardXp={caseItem.rewardXp}
@@ -509,8 +500,6 @@ export default function Home() {
           number={expandedCase.data.number}
           title={expandedCase.data.title}
           description={expandedCase.data.description}
-          fullDescription={expandedCase.data.fullDescription}
-          investigationPlan={expandedCase.data.investigationPlan}
           rewardXp={expandedCase.data.rewardXp}
           onClose={() => handleExpandCase(false, expandedCase.data!)}
         />

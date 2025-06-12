@@ -9,8 +9,6 @@ from users.models import AvailableTable, Case
 class BaseCase(ABC):
     title: str
     description: str
-    short_description: str
-    investigation_plan: str
     required_xp: int
     reward_xp: int
     answer: str | int
@@ -24,8 +22,6 @@ class BaseCase(ABC):
                     title=self.title,
                     defaults={
                         'description': self.description,
-                        'short_description': self.short_description,
-                        'investigation_plan': self.investigation_plan,
                         'required_xp': self.required_xp,
                         'reward_xp': self.reward_xp,
                         'answer': self.answer,
