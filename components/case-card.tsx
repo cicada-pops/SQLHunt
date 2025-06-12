@@ -16,6 +16,7 @@ import ReactFlow, {
   NodeProps
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import Loader from "./bounce-loader"
 
 // Определяем типы для колонки
 interface Column {
@@ -47,44 +48,44 @@ const TableNode = ({ data }: NodeProps<TableNodeData>) => {
              style={{ fontFamily: "var(--font-rationalist-bold)" }}>
           {data.tableName}
         </div>
-        <table className="w-full text-sm">
-          <tbody>
-            {data.columns.map((col, index) => {
-              const handles = [];
-              const rowHeight = 40; // Высота строки
-              const headerHeight = 40; // Уменьшаем высоту заголовка
-              const handleOffset = 10; // Компенсация для центрирования точки соединения
-              const verticalPosition = headerHeight + (rowHeight * index) + (rowHeight / 2) + handleOffset;
-              
-              // Добавляем Handle для первичного ключа (source)
-              if (col.isPrimary) {
-                handles.push(
-                  <Handle
-                    key={`source-${index}`}
-                    type="source"
-                    position={Position.Right}
-                    id={`${data.tableName}-${col.name}-source`}
-                    className="!bg-[#FF8A00]"
-                    style={{ top: `${verticalPosition}px` }}
-                  />
-                );
-              }
-              
-              // Добавляем Handle для внешнего ключа (target)
-              if (col.isForeign) {
-                handles.push(
-                  <Handle
-                    key={`target-${index}`}
-                    type="target"
-                    position={Position.Left}
-                    id={`${data.tableName}-${col.name}-target`}
-                    className="!bg-[#FF8A00]"
-                    style={{ top: `${verticalPosition}px` }}
-                  />
-                );
-              }
-
+        <div className="relative">
+          {data.columns.map((col, index) => {
+            const rowHeight = 36.4; // Высота строки
+            const headerHeight = 0; // Убираем отступ заголовка, так как он уже учтен в padding
+            const verticalPosition = (rowHeight * index) + (rowHeight / 2) + headerHeight; // Центрируем по строке
+            
+            // Добавляем Handle для первичного ключа (source)
+            if (col.isPrimary) {
               return (
+                <Handle
+                  key={`source-${index}`}
+                  type="source"
+                  position={Position.Right}
+                  id={`${data.tableName}-${col.name}-source`}
+                  className="!bg-[#FF8A00]"
+                  style={{ top: `${verticalPosition}px` }}
+                />
+              );
+            }
+            
+            // Добавляем Handle для внешнего ключа (target)
+            if (col.isForeign) {
+              return (
+                <Handle
+                  key={`target-${index}`}
+                  type="target"
+                  position={Position.Left}
+                  id={`${data.tableName}-${col.name}-target`}
+                  className="!bg-[#FF8A00]"
+                  style={{ top: `${verticalPosition}px` }}
+                />
+              );
+            }
+            return null;
+          })}
+          <table className="w-full text-sm">
+            <tbody>
+              {data.columns.map((col, index) => (
                 <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
                   <td className="py-2 pr-2">
                     <div className="flex items-center gap-1">
@@ -94,12 +95,11 @@ const TableNode = ({ data }: NodeProps<TableNodeData>) => {
                     </div>
                   </td>
                   <td className="py-2 pl-2 text-gray-500">{col.type}</td>
-                  {handles}
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -395,6 +395,8 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   const [sqlQuery, setSqlQuery] = useState("");
   const [queryResult, setQueryResult] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   
@@ -410,14 +412,72 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
     foreignKeys: Array<ForeignKey>;
   }> | null>(null);
   const [isLoadingSchema, setIsLoadingSchema] = useState(false);
+  const [showSchemaLoader, setShowSchemaLoader] = useState(false);
+  const schemaLoadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [schemaError, setSchemaError] = useState<string | null>(null);
   const [schemaViewMode, setSchemaViewMode] = useState<'table' | 'graphic'>('table');
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
+  const resultContentRef = useRef<HTMLDivElement>(null);
+
+  // Функция для управления состоянием загрузки с минимальной задержкой
+  const handleLoading = useCallback((loading: boolean) => {
+    if (loading) {
+      setShowLoader(true);
+      setIsLoading(true);
+      // Устанавливаем минимальное время отображения лоадера
+      loadingTimerRef.current = setTimeout(() => {
+        setShowLoader(false);
+      }, 2000);
+    } else {
+      setIsLoading(false);
+      // Если прошло меньше 2 секунд, лоадер останется до истечения таймера
+      if (!loadingTimerRef.current) {
+        setShowLoader(false);
+      }
+    }
+  }, []);
+
+  // Очистка таймера при размонтировании
+  useEffect(() => {
+    return () => {
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Функция для управления состоянием загрузки схемы с минимальной задержкой
+  const handleSchemaLoading = useCallback((loading: boolean) => {
+    if (loading) {
+      setShowSchemaLoader(true);
+      setIsLoadingSchema(true);
+      // Устанавливаем минимальное время отображения лоадера
+      schemaLoadingTimerRef.current = setTimeout(() => {
+        setShowSchemaLoader(false);
+      }, 3000);
+    } else {
+      setIsLoadingSchema(false);
+      // Если прошло меньше 3 секунд, лоадер останется до истечения таймера
+      if (!schemaLoadingTimerRef.current) {
+        setShowSchemaLoader(false);
+      }
+    }
+  }, []);
+
+  // Очистка таймера при размонтировании
+  useEffect(() => {
+    return () => {
+      if (schemaLoadingTimerRef.current) {
+        clearTimeout(schemaLoadingTimerRef.current);
+      }
+    };
+  }, []);
 
   // Функция для загрузки схемы БД
   const fetchDbSchema = async () => {
-    setIsLoadingSchema(true);
+    handleSchemaLoading(true);
     setSchemaError(null);
     
     try {
@@ -449,7 +509,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
       console.error('Schema fetch error:', err);
       setSchemaError(err instanceof Error ? err.message : 'Произошла неизвестная ошибка');
     } finally {
-      setIsLoadingSchema(false);
+      handleSchemaLoading(false);
     }
   };
 
@@ -521,6 +581,13 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
     }
   }, [dbSchema, schemaViewMode, createGraphElements]);
 
+  // Обновляем высоту при изменении контента
+  useEffect(() => {
+    if (resultContentRef.current && !isResultCollapsed) {
+      setContentHeight(resultContentRef.current.scrollHeight);
+    }
+  }, [queryResult, error, isResultCollapsed]);
+
   const handleClose = () => {
     setIsClosing(true);
     setTimeout(() => {
@@ -542,7 +609,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
       return;
     }
     
-    setIsLoading(true);
+    handleLoading(true);
     setError(null);
     
     try {
@@ -703,7 +770,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
       setError(err instanceof Error ? err.message : 'Произошла неизвестная ошибка');
       setQueryResult(null);
     } finally {
-      setIsLoading(false);
+      handleLoading(false);
     }
   };
 
@@ -764,68 +831,115 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
       </div>
 
       {/* Содержимое активной вкладки */}
-      <div className={`${activeTab === "Схема БД" ? 'h-auto' : 'h-[40vh]'} p-4 ${activeTab !== "Схема БД" ? 'overflow-y-auto' : ''} bg-transparent`}>
+      <div className={`${activeTab === "Схема БД" ? 'h-auto' : 'h-auto'} p-4 bg-transparent`}>
         {activeTab === "SQL-запросы" && (
-          <div className="flex h-full gap-4">
-            {/* Панель для SQL-запроса (левая) */}
-            <div className="flex flex-col w-1/2" style={{ 
-              border: 'none'
-            }}>
-              {/* Шапка окна SQL */}
-              <div className="flex justify-between items-center pr-1" style={{ backgroundColor: 'rgba(255, 168, 16, 0.4)' }}>
-                <div className="p-2 font-bold text-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
-                  SQL запрос
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-4" style={{ height: '300px' }}>
+              {/* Панель для SQL-запроса (слева) */}
+              <div className="flex flex-col w-1/2" style={{ 
+                border: 'none'
+              }}>
+                {/* Шапка окна SQL */}
+                <div className="flex justify-between items-center pr-1" style={{ backgroundColor: 'rgba(255, 168, 16, 0.4)' }}>
+                  <div className="p-2 font-bold text-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                    SQL запрос
+                  </div>
+                  <button 
+                    className={`px-2 py-0.5 m-1 mr-2 text-black flex items-center justify-center gap-1 text-sm ${
+                      isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    style={{ backgroundColor: 'rgba(255, 168, 16, 0.6)', fontFamily: "var(--font-rationalist-light)" }}
+                    onClick={executeQuery}
+                    disabled={isLoading}
+                  >
+                    <Play className="w-3 h-3 stroke-[2]" />
+                    {isLoading ? 'Выполняется...' : 'Выполнить'}
+                  </button>
                 </div>
-                <button 
-                  className={`px-2 py-0.5 m-1 mr-2 text-black flex items-center justify-center gap-1 text-sm ${
-                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  style={{ backgroundColor: 'rgba(255, 168, 16, 0.6)', fontFamily: "var(--font-rationalist-light)" }}
-                  onClick={executeQuery}
-                  disabled={isLoading}
-                >
-                  <Play className="w-3 h-3 stroke-[2]" />
-                  {isLoading ? 'Выполняется...' : 'Выполнить'}
-                </button>
+                {/* Поле для ввода SQL */}
+                <textarea
+                  className="flex-1 p-4 resize-none border-0 outline-none sql-textarea text-sm"
+                  style={{ backgroundColor: '#241C13', color: '#FFFFFF', fontFamily: "var(--font-rationalist-light)" }}
+                  placeholder="SELECT * FROM bla_bla_table ..."
+                  spellCheck="false"
+                  value={sqlQuery}
+                  onChange={handleQueryChange}
+                ></textarea>
               </div>
-              {/* Поле для ввода SQL */}
-              <textarea
-                className="flex-1 p-4 resize-none border-0 outline-none sql-textarea text-sm"
-                style={{ backgroundColor: '#241C13', color: '#FFFFFF', fontFamily: "var(--font-rationalist-light)" }}
-                placeholder="SELECT * FROM bla_bla_table ..."
-                spellCheck="false"
-                value={sqlQuery}
-                onChange={handleQueryChange}
-              ></textarea>
+
+              {/* Краткая схема БД (справа) */}
+              <div className="flex flex-col w-1/2">
+                <div className="flex justify-between items-center pr-1" style={{ backgroundColor: 'rgba(255, 168, 16, 0.4)' }}>
+                  <div className="p-2 font-bold text-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                    Схема БД (краткая)
+                  </div>
+                </div>
+                <div className="flex-1 overflow-auto bg-[#241C13] p-4">
+                  {showSchemaLoader || isLoadingSchema ? (
+                    <div className="text-white text-center py-4" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                      Загрузка схемы...
+                    </div>
+                  ) : schemaError ? (
+                    <div className="text-red-500 py-4" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                      {schemaError}
+                    </div>
+                  ) : dbSchema ? (
+                    <div className="space-y-4">
+                      {dbSchema.map((table, tableIndex) => (
+                        <div key={tableIndex} className="border border-[rgba(255,168,16,0.4)] p-2 rounded">
+                          <h4 className="text-[rgba(255,168,16,0.8)] font-bold mb-1" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
+                            {table.tableName}
+                          </h4>
+                          <div className="text-white text-sm space-y-1">
+                            {table.columns.map((col, colIndex) => (
+                              <div key={colIndex} className="flex items-center gap-2">
+                                <span>{col.name}</span>
+                                {col.isPrimary && <span title="Первичный ключ" className="text-[#FF8A00]">🔑</span>}
+                                {col.isForeign && <span title="Внешний ключ" className="text-[#FF8A00]">🔗</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-400 italic" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                      Схема не загружена
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Панель результата запроса (правая) */}
-            <div className="flex flex-col w-1/2">
-              {/* Шапка окна результата */}
+            {/* Панель результата запроса (внизу на всю ширину) */}
+            <div className="flex flex-col">
               <div 
-                className="flex justify-between items-center cursor-pointer" 
+                className="flex justify-between items-center cursor-pointer hover:bg-[rgba(255,168,16,0.5)] transition-colors duration-200" 
                 style={{ backgroundColor: 'rgba(255, 168, 16, 0.4)' }}
                 onClick={toggleResultPanel}
               >
                 <div className="p-2 font-bold text-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
                   Результат {error ? '(Ошибка)' : ''}
                 </div>
-                <button className="px-3 py-1 m-1 text-black" style={{ background: 'none', fontFamily: "var(--font-rationalist-light)" }}>
-                  {isResultCollapsed ? <ChevronDown className="w-4 h-4 stroke-[2]" /> : <ChevronUp className="w-4 h-4 stroke-[2]" />}
+                <button 
+                  className={`px-3 py-1 m-1 text-black transition-transform duration-300 ${isResultCollapsed ? '' : 'rotate-180'}`} 
+                  style={{ background: 'none', fontFamily: "var(--font-rationalist-light)" }}
+                >
+                  <ChevronDown className="w-4 h-4 stroke-[2]" />
                 </button>
               </div>
               
-              {/* Область результата */}
               <div 
-                className="flex-1 overflow-auto transition-all duration-300"
+                className="transition-all duration-300 ease-in-out"
                 style={{ 
-                  maxHeight: isResultCollapsed ? '0' : '100%',
+                  height: isResultCollapsed ? '0' : (contentHeight ? `${contentHeight}px` : 'auto'),
                   opacity: isResultCollapsed ? 0 : 1,
-                  visibility: isResultCollapsed ? 'hidden' : 'visible',
-                  backgroundColor: '#241C13'
+                  overflow: 'hidden',
+                  backgroundColor: '#241C13',
+                  transformOrigin: 'top',
                 }}
               >
-                <div className="p-4 h-full">
+                <div ref={resultContentRef} className="p-4">
                   {error ? (
                     <div className="text-red-500 whitespace-pre-wrap text-sm" style={{ fontFamily: "var(--font-rationalist-light)" }}>
                       {error}
@@ -868,9 +982,9 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
 
         {activeTab === "Схема БД" && (
           <div className="w-full">
-            {isLoadingSchema ? (
-              <div className="text-center py-4" style={{ fontFamily: "var(--font-rationalist-light)" }}>
-                Загрузка схемы базы данных...
+            {showSchemaLoader || isLoadingSchema ? (
+              <div className="flex items-center justify-center min-h-[200px]">
+                <Loader />
               </div>
             ) : schemaError ? (
               <div className="text-red-500 py-4" style={{ fontFamily: "var(--font-rationalist-light)" }}>

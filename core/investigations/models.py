@@ -61,8 +61,6 @@ class Case(models.Model):
     ]
 
     description = models.TextField()
-    short_description = models.TextField(null=True, blank=True)
-    investigation_plan = models.TextField(null=True, blank=True)
     date_opened = models.DateField()
     date_closed = models.DateField(null=True)
     type = models.CharField(max_length=30, choices=CASE_TYPE_CHOICES)  

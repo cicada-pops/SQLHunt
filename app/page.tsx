@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "../contexts/auth-context"
 import { useEffect, useCallback, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { AuthModal } from "../components/auth-modal"
+import Loader from "../components/bounce-loader"
 
 interface CaseData {
   number: string;
@@ -66,7 +67,6 @@ export default function Home() {
     rewardXp: number;
   }>>([]);
   const [caseTitles, setCaseTitles] = useState<string[]>([]); // Добавляем состояние для заголовков
-  const [isLoadingCases, setIsLoadingCases] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Состояние для отслеживания открытой карточки
@@ -90,8 +90,9 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   
   // Добавляем новое состояние для начальной загрузки
-  const [initialLoading, setInitialLoading] = useState(true);
-  
+  const [isLoading, setIsLoading] = useState(true);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Проверяем состояние авторизации при монтировании
   useEffect(() => {
     console.log('Состояние авторизации:', {
@@ -101,14 +102,22 @@ export default function Home() {
     });
   }, [isAuthenticated, user]);
 
-  // Проверяем, что мы на клиенте
+  // Обновляем эффект для проверки клиента
   useEffect(() => {
     setIsClient(true);
-    // Добавляем небольшую задержку перед скрытием начальной загрузки
-    const timer = setTimeout(() => {
-      setInitialLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // Устанавливаем минимальное время отображения лоадера
+    loadingTimerRef.current = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+
+    return () => {
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
+    };
   }, []);
 
   // Проверяем URL при загрузке для восстановления состояния
@@ -147,7 +156,6 @@ export default function Home() {
     
     const fetchCases = async () => {
       console.log('Начинаем загрузку дел...');
-      setIsLoadingCases(true);
       setFetchError(null);
       
       try {
@@ -187,8 +195,6 @@ export default function Home() {
       } catch (e: any) {
         console.error('Ошибка при загрузке дел:', e);
         setFetchError(e.message || 'Ошибка загрузки');
-      } finally {
-        setIsLoadingCases(false);
       }
     };
 
@@ -432,16 +438,7 @@ export default function Home() {
 
           {/* Cards container */}
           <div className="min-h-[200px] transition-opacity duration-300 ease-in-out">
-            {isLoadingCases ? (
-              <div 
-                className="flex items-center justify-center min-h-[200px] opacity-70 transition-opacity duration-300"
-                style={{
-                  opacity: isLoadingCases ? 0.7 : 0
-                }}
-              >
-                <div className="text-xl animate-pulse">Загрузка дел...</div>
-              </div>
-            ) : fetchError ? (
+            {fetchError ? (
               <div className="flex items-center justify-center min-h-[200px] transition-opacity duration-300">
                 <div className="text-xl text-red-500">{fetchError}</div>
               </div>
@@ -526,14 +523,9 @@ export default function Home() {
         />
 
         {/* Содержимое развернутой карточки или основной контент - отображаем только на клиенте */}
-        {initialLoading ? (
-          <div 
-            className="w-full min-h-[80vh] flex items-center justify-center transition-opacity duration-300"
-            style={{
-              opacity: initialLoading ? 1 : 0
-            }}
-          >
-            <div className="text-xl animate-pulse">Загрузка...</div>
+        {isLoading ? (
+          <div className="w-full min-h-[80vh] flex items-center justify-center">
+            <Loader />
           </div>
         ) : isClient ? (
           expandedCase.isExpanded ? renderExpandedCase() : renderMainContent()
