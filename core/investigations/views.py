@@ -1,5 +1,6 @@
 from celery.result import AsyncResult
 from celery_app import app
+from django.core.exceptions import ObjectDoesNotExist
 from investigations.decorators import validate_case_access
 from investigations.tasks import execute_safe_sql
 from rest_framework import status
@@ -18,8 +19,22 @@ from services.schema_creator import get_schema
 @permission_classes([IsAuthenticated])
 @validate_case_access
 def schema_view(request, case_id):
-    schema = get_schema(request.case.id) 
-    return Response(schema)
+    """
+    Get the database schema for a specific case.
+    """
+    try:
+        schema = get_schema(case_id)
+        return Response(schema)
+    except ObjectDoesNotExist as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 class ExecuteSQLView(APIView):

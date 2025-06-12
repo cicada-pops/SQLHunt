@@ -190,7 +190,7 @@ export default function Home() {
         
         setCasesList(cases);
         // Обновляем список заголовков
-        setCaseTitles(cases.map(c => c.title.toUpperCase()));
+        setCaseTitles(cases.map((c: CaseData) => c.title.toUpperCase()));
       } catch (e: any) {
         console.error('Ошибка при загрузке дел:', e);
         setFetchError(e.message || 'Ошибка загрузки');

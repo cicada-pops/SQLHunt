@@ -1,8 +1,114 @@
 import Link from "next/link"
 import Image from "next/image"
-import { X, Play, ChevronUp, ChevronDown } from "lucide-react"
-import { memo, useState, useRef, useEffect } from "react"
+import { X, Play, ChevronUp, ChevronDown, Table, Share2 } from "lucide-react"
+import { memo, useState, useRef, useEffect, useCallback } from "react"
 import { useAuth } from "../contexts/auth-context"
+import ReactFlow, { 
+  Node, 
+  Edge,
+  Background,
+  Controls,
+  MiniMap,
+  useNodesState,
+  useEdgesState,
+  Handle,
+  Position,
+  NodeProps
+} from 'reactflow';
+import 'reactflow/dist/style.css';
+
+// Определяем типы для колонки
+interface Column {
+  name: string;
+  type: string;
+  isPrimary: boolean;
+  isForeign: boolean;
+}
+
+// Определяем тип для данных узла
+interface TableNodeData {
+  tableName: string;
+  columns: Column[];
+}
+
+// Определяем тип для внешнего ключа
+interface ForeignKey {
+  fromColumn: string;
+  toTable: string;
+  toColumn: string;
+}
+
+// Кастомный компонент узла
+const TableNode = ({ data }: NodeProps<TableNodeData>) => {
+  return (
+    <div className="bg-white rounded-lg border-2 border-black shadow-lg">
+      <div className="p-4">
+        <div className="font-bold mb-2 border-b border-black pb-1" 
+             style={{ fontFamily: "var(--font-rationalist-bold)" }}>
+          {data.tableName}
+        </div>
+        <table className="w-full text-sm">
+          <tbody>
+            {data.columns.map((col, index) => {
+              const handles = [];
+              const rowHeight = 40; // Высота строки
+              const headerHeight = 40; // Уменьшаем высоту заголовка
+              const handleOffset = 10; // Компенсация для центрирования точки соединения
+              const verticalPosition = headerHeight + (rowHeight * index) + (rowHeight / 2) + handleOffset;
+              
+              // Добавляем Handle для первичного ключа (source)
+              if (col.isPrimary) {
+                handles.push(
+                  <Handle
+                    key={`source-${index}`}
+                    type="source"
+                    position={Position.Right}
+                    id={`${data.tableName}-${col.name}-source`}
+                    className="!bg-[#FF8A00]"
+                    style={{ top: `${verticalPosition}px` }}
+                  />
+                );
+              }
+              
+              // Добавляем Handle для внешнего ключа (target)
+              if (col.isForeign) {
+                handles.push(
+                  <Handle
+                    key={`target-${index}`}
+                    type="target"
+                    position={Position.Left}
+                    id={`${data.tableName}-${col.name}-target`}
+                    className="!bg-[#FF8A00]"
+                    style={{ top: `${verticalPosition}px` }}
+                  />
+                );
+              }
+
+              return (
+                <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
+                  <td className="py-2 pr-2">
+                    <div className="flex items-center gap-1">
+                      {col.name}
+                      {col.isPrimary && <span title="Первичный ключ">🔑</span>}
+                      {col.isForeign && <span title="Внешний ключ">🔗</span>}
+                    </div>
+                  </td>
+                  <td className="py-2 pl-2 text-gray-500">{col.type}</td>
+                  {handles}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// Регистрируем типы узлов
+const nodeTypes = {
+  tableNode: TableNode,
+};
 
 // Функция для нормализации текста
 const normalizeText = (text?: string) => {
@@ -303,6 +409,129 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  
+  // Добавляем состояние для схемы БД
+  const [dbSchema, setDbSchema] = useState<Array<{
+    tableName: string;
+    columns: Array<{
+      name: string;
+      type: string;
+      isPrimary: boolean;
+      isForeign: boolean;
+    }>;
+    foreignKeys: Array<ForeignKey>;
+  }> | null>(null);
+  const [isLoadingSchema, setIsLoadingSchema] = useState(false);
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+  const [schemaViewMode, setSchemaViewMode] = useState<'table' | 'graphic'>('table');
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  // Функция для загрузки схемы БД
+  const fetchDbSchema = async () => {
+    setIsLoadingSchema(true);
+    setSchemaError(null);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Необходима авторизация');
+      }
+
+      const response = await fetch(`https://sqlhunt.com:8000/api/cases/${number}/schema/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось загрузить схему базы данных');
+      }
+
+      if (!Array.isArray(data)) {
+        throw new Error('Некорректный формат данных схемы');
+      }
+      
+      setDbSchema(data);
+    } catch (err) {
+      console.error('Schema fetch error:', err);
+      setSchemaError(err instanceof Error ? err.message : 'Произошла неизвестная ошибка');
+    } finally {
+      setIsLoadingSchema(false);
+    }
+  };
+
+  // Загружаем схему БД при переключении на соответствующую вкладку
+  useEffect(() => {
+    if (activeTab === "Схема БД" && !dbSchema && !isLoadingSchema) {
+      fetchDbSchema();
+    }
+  }, [activeTab, dbSchema, isLoadingSchema, number]);
+
+  // Функция для создания узлов и рёбер для React Flow
+  const createGraphElements = useCallback((schema: any[]) => {
+    const newNodes: Node[] = [];
+    const newEdges: Edge[] = [];
+    const spacing = { x: 400, y: 400 }; // Увеличиваем расстояние между таблицами
+    const maxColumns = 3;
+
+    schema.forEach((table, tableIndex) => {
+      const column = tableIndex % maxColumns;
+      const row = Math.floor(tableIndex / maxColumns);
+
+      // Добавляем узел для таблицы с увеличенным расстоянием
+      newNodes.push({
+        id: table.tableName,
+        position: { 
+          x: column * spacing.x + 50, 
+          y: row * spacing.y + 50 
+        },
+        data: {
+          tableName: table.tableName,
+          columns: table.columns
+        },
+        type: 'tableNode',
+        style: { width: 280 }
+      });
+
+      // Создаем рёбра для связей между таблицами
+      table.foreignKeys.forEach((fk: ForeignKey) => {
+        // Находим индекс колонки с внешним ключом
+        const sourceColumnIndex = table.columns.findIndex((col: Column) => col.name === fk.fromColumn);
+        
+        // Находим целевую таблицу и индекс её первичного ключа
+        const targetTable = schema.find((t: { tableName: string; columns: Column[] }) => t.tableName === fk.toTable);
+        const targetColumnIndex = targetTable?.columns.findIndex((col: Column) => col.name === fk.toColumn) ?? 0;
+
+        newEdges.push({
+          id: `${table.tableName}-${fk.toTable}-${fk.fromColumn}`,
+          source: fk.toTable, // Меняем местами source и target
+          target: table.tableName,
+          sourceHandle: `${fk.toTable}-${fk.toColumn}-source`,
+          targetHandle: `${table.tableName}-${fk.fromColumn}-target`,
+          type: 'smoothstep',
+          animated: true,
+          style: { stroke: '#FF8A00' },
+          labelStyle: { fill: '#FF8A00', fontFamily: 'var(--font-rationalist-light)' },
+          label: `${fk.fromColumn} → ${fk.toColumn}`
+        });
+      });
+    });
+
+    setNodes(newNodes);
+    setEdges(newEdges);
+  }, [setNodes, setEdges]);
+
+  // Обновляем элементы графа при изменении схемы
+  useEffect(() => {
+    if (dbSchema && schemaViewMode === 'graphic') {
+      createGraphElements(dbSchema);
+    }
+  }, [dbSchema, schemaViewMode, createGraphElements]);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -331,55 +560,158 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        throw new Error('Необходима авторизация');
+        throw new Error('Необходима авторизация. Пожалуйста, войдите в систему.');
       }
 
-      // Отправляем запрос на выполнение
+      window.console.log('[SQL Execute] Отправка запроса...');
+      
+      // Отправляем запрос на сервер
       const response = await fetch(`https://sqlhunt.com:8000/api/cases/${number}/execute-sql/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
         },
         body: JSON.stringify({ sql: sqlQuery }),
       });
 
-      const data = await response.json();
+      window.console.log(`[SQL Execute] Статус ответа:`, {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url
+      });
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Ошибка выполнения запроса');
+      // Получаем текст ответа
+      const responseText = await response.text();
+      window.console.log('[SQL Execute] Полученный ответ (текст):', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        window.console.log('[SQL Execute] Распарсенные данные:', data);
+      } catch (e) {
+        window.console.error('[SQL Execute] Ошибка при разборе JSON:', e);
+        throw new Error('Получен некорректный ответ от сервера');
+      }
+
+      // Проверяем ошибки
+      if (!response.ok && response.status !== 202) {
+        if (response.status === 401) {
+          throw new Error('Сессия истекла. Пожалуйста, войдите в систему заново.');
+        } else if (response.status === 403) {
+          throw new Error('Нет доступа к выполнению запросов. Пожалуйста, войдите в систему заново.');
+        } else {
+          throw new Error(data.error || data.detail || `Ошибка сервера: ${response.status}`);
+        }
+      }
+
+      if (!data || !data.task_id) {
+        throw new Error('Сервер не вернул идентификатор задачи');
       }
 
       // Получаем task_id и начинаем опрашивать статус
       const taskId = data.task_id;
-      let result = null;
+      window.console.log('[Task Status] Начинаем опрос статуса для task_id:', taskId);
+      
+      let queryResult = null;
+      let attempts = 0;
+      const maxAttempts = 60;
+      const retryDelay = 500;
 
-      while (true) {
-        const statusResponse = await fetch(`https://sqlhunt.com:8000/api/tasks/${taskId}/status/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
+      // Основной цикл опроса статуса
+      while (attempts < maxAttempts) {
+        try {
+          window.console.log(`[Task Status] Попытка ${attempts + 1}/${maxAttempts} для задачи ${taskId}`);
+          
+          const statusResponse = await fetch(`https://sqlhunt.com:8000/api/tasks/${taskId}/status/`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            }
+          });
+
+          if (!statusResponse.ok) {
+            window.console.error('[Task Status] Ошибка при получении статуса:', {
+              status: statusResponse.status,
+              statusText: statusResponse.statusText
+            });
+            const statusError = await statusResponse.json().catch(() => ({}));
+            throw new Error(statusError.error || `Ошибка при получении статуса задачи: ${statusResponse.status}`);
           }
-        });
-        const statusData = await statusResponse.json();
 
-        if (statusData.status === 'SUCCESS') {
-          result = statusData.result;
-          break;
-        } else if (statusData.status === 'FAILURE') {
-          throw new Error(statusData.error || 'Задача завершилась с ошибкой');
+          const statusResponseText = await statusResponse.text();
+          let statusData;
+          try {
+            statusData = JSON.parse(statusResponseText);
+            window.console.log('[Task Status] Получен статус:', {
+              taskId,
+              status: statusData.status,
+              hasResult: !!statusData.result,
+              attempt: attempts + 1
+            });
+          } catch (e) {
+            window.console.error('[Task Status] Ошибка при разборе JSON:', e);
+            window.console.error('[Task Status] Текст ответа:', statusResponseText);
+            throw new Error('Получен некорректный ответ при проверке статуса');
+          }
+
+          if (statusData.status === 'SUCCESS') {
+            if (!statusData.result) {
+              throw new Error('Получен пустой результат от сервера');
+            }
+            
+            if (statusData.result.error) {
+              throw new Error(statusData.result.error);
+            }
+
+            if (!Array.isArray(statusData.result.columns) || !Array.isArray(statusData.result.rows)) {
+              throw new Error('Некорректный формат результата запроса');
+            }
+
+            queryResult = statusData.result;
+            window.console.log('[Task Status] Задача успешно завершена');
+            break;
+          } else if (statusData.status === 'FAILURE') {
+            throw new Error(statusData.error || 'Задача завершилась с ошибкой');
+          } else if (statusData.status === 'PENDING' || statusData.status === 'STARTED') {
+            window.console.log(`[Task Status] Задача ${statusData.status}, ожидаем...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            attempts++;
+            continue;
+          } else {
+            throw new Error(`Неизвестный статус задачи: ${statusData.status}`);
+          }
+        } catch (error) {
+          window.console.error(`[Task Status] Ошибка при попытке ${attempts + 1}:`, error);
+          
+          if (attempts >= maxAttempts - 1) {
+            throw error;
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          attempts++;
         }
-
-        // Ждем 1 секунду перед следующим запросом
-        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      if (result && result.error) {
-        throw new Error(result.error);
+      if (attempts >= maxAttempts) {
+        throw new Error('Превышено время ожидания ответа от сервера');
       }
 
-      setQueryResult(result);
+      if (!queryResult) {
+        throw new Error('Не удалось получить результат выполнения запроса');
+      }
+
+      window.console.log('[Task Status] Запрос успешно выполнен:', {
+        taskId,
+        columnsCount: queryResult.columns.length,
+        rowsCount: queryResult.rows.length
+      });
+
+      setQueryResult(queryResult);
       setError(null);
     } catch (err) {
+      window.console.error('[Error] Ошибка выполнения запроса:', err);
       setError(err instanceof Error ? err.message : 'Произошла неизвестная ошибка');
       setQueryResult(null);
     } finally {
@@ -480,7 +812,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
       </div>
 
       {/* Содержимое активной вкладки */}
-      <div className="h-[40vh] p-4 overflow-y-auto bg-transparent">
+      <div className={`${activeTab === "Схема БД" ? 'h-auto' : 'h-[40vh]'} p-4 ${activeTab !== "Схема БД" ? 'overflow-y-auto' : ''} bg-transparent`}>
         {activeTab === "SQL-запросы" && (
           <div className="flex h-full gap-4">
             {/* Панель для SQL-запроса (левая) */}
@@ -579,6 +911,99 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === "Схема БД" && (
+          <div className="w-full">
+            {isLoadingSchema ? (
+              <div className="text-center py-4" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                Загрузка схемы базы данных...
+              </div>
+            ) : schemaError ? (
+              <div className="text-red-500 py-4" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                {schemaError}
+              </div>
+            ) : dbSchema ? (
+              <div>
+                <div className="flex gap-4 mb-4">
+                  <button
+                    onClick={() => setSchemaViewMode('table')}
+                    className={`flex items-center gap-2 px-4 py-2 border-2 border-black rounded ${
+                      schemaViewMode === 'table' ? 'bg-black text-white' : 'bg-white text-black'
+                    }`}
+                  >
+                    <Table className="w-4 h-4" />
+                    Таблица
+                  </button>
+                  <button
+                    onClick={() => setSchemaViewMode('graphic')}
+                    className={`flex items-center gap-2 px-4 py-2 border-2 border-black rounded ${
+                      schemaViewMode === 'graphic' ? 'bg-black text-white' : 'bg-white text-black'
+                    }`}
+                  >
+                    <Share2 className="w-4 h-4" />
+                    График
+                  </button>
+                </div>
+
+                {schemaViewMode === 'table' ? (
+                  <div className="space-y-8">
+                    {dbSchema.map((table, tableIndex) => (
+                      <div key={tableIndex}>
+                        <h3 className="text-lg font-bold mb-2" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
+                          Таблица: {table.tableName}
+                        </h3>
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-[rgba(255,168,16,0.4)]">
+                              <th className="p-2 text-left border border-black" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Колонка</th>
+                              <th className="p-2 text-left border border-black" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Тип данных</th>
+                              <th className="p-2 text-left border border-black" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Первичный ключ</th>
+                              <th className="p-2 text-left border border-black" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Внешний ключ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {table.columns.map((column, columnIndex) => (
+                              <tr key={columnIndex} className={columnIndex % 2 === 0 ? 'bg-[rgba(255,168,16,0.1)]' : ''}>
+                                <td className="p-2 border border-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>{column.name}</td>
+                                <td className="p-2 border border-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>{column.type}</td>
+                                <td className="p-2 border border-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                                  {column.isPrimary ? 'Да' : 'Нет'}
+                                </td>
+                                <td className="p-2 border border-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                                  {column.isForeign ? 'Да' : 'Нет'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ height: '600px' }} className="border-2 border-black rounded">
+                    <ReactFlow
+                      nodes={nodes}
+                      edges={edges}
+                      onNodesChange={onNodesChange}
+                      onEdgesChange={onEdgesChange}
+                      nodeTypes={nodeTypes}
+                      fitView
+                      className="bg-gray-50"
+                    >
+                      <Background />
+                      <Controls />
+                      <MiniMap />
+                    </ReactFlow>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                Нет данных о схеме базы данных
+              </div>
+            )}
           </div>
         )}
 
