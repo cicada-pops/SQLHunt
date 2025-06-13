@@ -7,19 +7,50 @@ import { AuthProvider, useAuth } from "../contexts/auth-context"
 import { useEffect, useCallback, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { AuthModal } from "../components/auth-modal"
+import Loader from "../components/bounce-loader"
 
 interface CaseData {
   number: string;
   title: string;
   description: string;
   requiredExp: number;
+  rewardXp: number;
+}
+
+const styles = `
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
+
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
 }
 
 export default function Home() {
   // Получаем параметры из URL
   const searchParams = useSearchParams();
+  const caseId = searchParams.get('case');
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   // Ref для отслеживания первого рендера
   const isFirstRender = useRef(true);
@@ -28,52 +59,20 @@ export default function Home() {
   
   // Состояние для модального окна авторизации
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [pendingCaseData, setPendingCaseData] = useState<CaseData | null>(null);
+  const [casesList, setCasesList] = useState<Array<{
+    number: string;
+    title: string;
+    description: string;
+    requiredExp: number;
+    rewardXp: number;
+  }>>([]);
+  const [caseTitles, setCaseTitles] = useState<string[]>([]); // Добавляем состояние для заголовков
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Массив с данными всех дел для подгрузки по номеру из URL
-  const casesList: CaseData[] = [
-    {
-      number: "001",
-      title: "Серебряный Ключ",
-      description: "Во время дождливой ночи в одном из номеров мотеля «Серебряный Ключ» предварительно произошло похищение. Следователи зафиксировали следы борьбы: перевёрнутый стол, след обуви в крови, частично вырванный лист из блокнота. Был найден диктофон марки «Союз» с неполной записью. На заправке в двух километрах от места происшествия работник ночной смены заявил, что видел мужчину, спешно садившегося в автомобиль без номеров около 2:30 ночи. По его словам, у человека были рыжие волосы, он был одет в черную одежду и у него точно была «морская» татуировка.",
-      requiredExp: 0 // Первое дело доступно всем
-    },
-    {
-      number: "002",
-      title: "Пропавший картель",
-      description: "Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих.",
-      requiredExp: 100 // Требуется 100 опыта
-    },
-    {
-      number: "003",
-      title: "Загадка закрытого кабинета",
-      description: "В элитном особняке найден мертвым известный адвокат. Дверь его кабинета была заперта изнутри, окно не вскрыто. На столе стоит наполовину допитый стакан коньяка, а рядом — перевернутый лист бумаги с едва различимыми буквами. Как убийца смог выбраться из закрытой комнаты?",
-      requiredExp: 200 // Требуется 200 опыта
-    },
-    {
-      number: "004",
-      title: "Загадка закрытого кабинета",
-      description: "В элитном особняке найден мертвым известный адвокат. Дверь его кабинета была заперта изнутри, окно не вскрыто. На столе стоит наполовину допитый стакан коньяка, а рядом — перевернутый лист бумаги с едва различимыми буквами. Как убийца смог выбраться из закрытой комнаты?",
-      requiredExp: 300 // Требуется 300 опыта
-    },
-    {
-      number: "005",
-      title: "Пропавший картель",
-      description: "Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих.",
-      requiredExp: 400 // Требуется 400 опыта
-    },
-    {
-      number: "006",
-      title: "Пропавший картель",
-      description: "Действие происходит в 1995 году. Тайная сделка между двумя преступными группировками в клубе 'Красный Фонарь' закончилась неожиданно — один из участников исчез вместе с чемоданом, полным наличных. Свидетели видели, как черный седан спешно уехал с места событий. Вам предстоит изучить улики, допросить свидетелей и выяснить, кто предал своих.",
-      requiredExp: 500 // Требуется 500 опыта
-    }
-  ];
-  
   // Состояние для отслеживания открытой карточки
   const [expandedCase, setExpandedCase] = useState<{
     isExpanded: boolean;
-    data: CaseData | null;
+    data: any;
     isClosing: boolean;
   }>({
     isExpanded: false,
@@ -90,9 +89,35 @@ export default function Home() {
   // Состояние для определения, находимся ли мы на клиенте
   const [isClient, setIsClient] = useState(false);
   
-  // Проверяем, что мы на клиенте
+  // Добавляем новое состояние для начальной загрузки
+  const [isLoading, setIsLoading] = useState(true);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Проверяем состояние авторизации при монтировании
+  useEffect(() => {
+    console.log('Состояние авторизации:', {
+      isAuthenticated,
+      user,
+      hasToken: !!localStorage.getItem('token')
+    });
+  }, [isAuthenticated, user]);
+
+  // Обновляем эффект для проверки клиента
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Устанавливаем минимальное время отображения лоадера
+    loadingTimerRef.current = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+
+    return () => {
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
+    };
   }, []);
 
   // Проверяем URL при загрузке для восстановления состояния
@@ -126,25 +151,76 @@ export default function Home() {
     }
   }, [searchParams, user]);
 
+  useEffect(() => {
+    console.log('Состояние авторизации изменилось:', { isAuthenticated, user });
+    
+    const fetchCases = async () => {
+      console.log('Начинаем загрузку дел...');
+      setFetchError(null);
+      
+      try {
+        const token = localStorage.getItem('token');
+        console.log('Пробуем загрузить с токеном:', token);
+        
+        const response = await fetch('https://sqlhunt.com:8000/api/cases/', {
+          method: 'GET',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          mode: 'cors',
+        });
+        
+        console.log('Ответ от сервера:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`Ошибка загрузки дел: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Получены дела:', data);
+        
+        const cases = data.map((item: any) => ({
+          number: String(item.id),
+          title: item.title,
+          description: item.description,
+          requiredExp: item.required_xp,
+          rewardXp: item.reward_xp,
+        }));
+        
+        setCasesList(cases);
+        // Обновляем список заголовков
+        setCaseTitles(cases.map((c: CaseData) => c.title.toUpperCase()));
+      } catch (e: any) {
+        console.error('Ошибка при загрузке дел:', e);
+        setFetchError(e.message || 'Ошибка загрузки');
+      }
+    };
+
+    // Пробуем загрузить в любом случае, если есть токен
+    const token = localStorage.getItem('token');
+    if (token) {
+      console.log('Есть токен, пробуем загрузить дела');
+      fetchCases();
+    } else {
+      console.log('Нет токена для загрузки дел');
+    }
+  }, [isAuthenticated]); // Зависимость от isAuthenticated остаётся
+
   // Обработчик успешной авторизации
   const handleAuthSuccess = () => {
     setIsAuthModalOpen(false);
-    if (pendingCaseData) {
+    if (expandedCase.data) {
       // Проверяем, достаточно ли у пользователя опыта
       const userExp = user?.experience || 0;
-      if (userExp >= pendingCaseData.requiredExp) {
-        // Открываем отложенное дело после успешной авторизации
-        setExpandedCase({
-          isExpanded: true,
-          data: pendingCaseData,
-          isClosing: false
-        });
+      if (userExp >= expandedCase.data.requiredExp) {
+        // Открываем открытое дело после успешной авторизации
         setMainContentState('hidden');
-        setPageTitle(`Дело №${pendingCaseData.number}: ${pendingCaseData.title} - SQL Hunt`);
+        setPageTitle(`Дело №${expandedCase.data.number}: ${expandedCase.data.title} - SQL Hunt`);
         // Восстанавливаем URL с номером дела
-        router.push(`/?case=${pendingCaseData.number}`);
+        router.push(`/?case=${expandedCase.data.number}`);
       }
-      setPendingCaseData(null);
     }
   };
 
@@ -349,95 +425,59 @@ export default function Home() {
           {/* Header with filter button */}
           <div className="flex justify-between items-center mb-6">
             <h2 
-              className="text-5xl font-normal" 
+              className="text-5xl font-normal opacity-0" 
               style={{ 
                 fontFamily: "var(--font-heathergreen)",
-                letterSpacing: "0.08em"
+                letterSpacing: "0.08em",
+                animation: 'fadeIn 0.6s ease-out 0.2s forwards'
               }}
             >
               Дела:
             </h2>
-            <span 
-              className="text-5xl font-normal cursor-pointer" 
-              style={{ 
-                fontFamily: "var(--font-heathergreen)",
-                letterSpacing: "0.08em"
-              }}
-            >
-              Фильтр
-            </span>
           </div>
 
           {/* Cards container */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Первый столбец */}
-            <div className="sm:w-1/2 lg:w-1/3 flex flex-col gap-4">
-              <CaseCard
-                number={casesList[0].number}
-                title={casesList[0].title}
-                description={casesList[0].description}
-                isMarked={false}
-                requiredExp={casesList[0].requiredExp}
-                userExp={user?.experience || 0}
-                onExpandCase={handleExpandCase}
-              />
-              
-              <CaseCard
-                number={casesList[3].number}
-                title={casesList[3].title}
-                description={casesList[3].description}
-                isMarked={false}
-                requiredExp={casesList[3].requiredExp}
-                userExp={user?.experience || 0}
-                onExpandCase={handleExpandCase}
-              />
-            </div>
-            
-            {/* Второй столбец */}
-            <div className="sm:w-1/2 lg:w-1/3 flex flex-col gap-4">
-              <CaseCard
-                number={casesList[1].number}
-                title={casesList[1].title}
-                description={casesList[1].description}
-                isMarked={false}
-                requiredExp={casesList[1].requiredExp}
-                userExp={user?.experience || 0}
-                onExpandCase={handleExpandCase}
-              />
-              
-              <CaseCard
-                number={casesList[4].number}
-                title={casesList[4].title}
-                description={casesList[4].description}
-                isMarked={false}
-                requiredExp={casesList[4].requiredExp}
-                userExp={user?.experience || 0}
-                onExpandCase={handleExpandCase}
-              />
-            </div>
-            
-            {/* Третий столбец - виден только на больших экранах */}
-            <div className="hidden lg:flex lg:w-1/3 flex-col gap-4">
-              <CaseCard
-                number={casesList[2].number}
-                title={casesList[2].title}
-                description={casesList[2].description}
-                isMarked={false}
-                requiredExp={casesList[2].requiredExp}
-                userExp={user?.experience || 0}
-                onExpandCase={handleExpandCase}
-              />
-              
-              <CaseCard
-                number={casesList[5].number}
-                title={casesList[5].title}
-                description={casesList[5].description}
-                isMarked={false}
-                requiredExp={casesList[5].requiredExp}
-                userExp={user?.experience || 0}
-                onExpandCase={handleExpandCase}
-              />
-            </div>
+          <div className="min-h-[200px] transition-opacity duration-300 ease-in-out">
+            {fetchError ? (
+              <div className="flex items-center justify-center min-h-[200px] transition-opacity duration-300">
+                <div className="text-xl text-red-500">{fetchError}</div>
+              </div>
+            ) : (
+              <div 
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn"
+                style={{
+                  animation: 'fadeIn 0.4s ease-in-out'
+                }}
+              >
+                {casesList.map((caseItem) => (
+                  <div 
+                    key={caseItem.number} 
+                    className="w-full opacity-0 animate-slideUp"
+                    style={{
+                      animation: 'slideUp 0.4s ease-out forwards',
+                      animationDelay: `${parseInt(caseItem.number) * 0.1}s`
+                    }}
+                  >
+                    <CaseCard
+                      key={caseItem.number}
+                      number={caseItem.number}
+                      title={caseItem.title}
+                      description={caseItem.description}
+                      isMarked={false}
+                      requiredExp={caseItem.requiredExp}
+                      rewardXp={caseItem.rewardXp}
+                      userExp={user?.experience || 0}
+                      onExpandCase={handleExpandCase}
+                    />
+                  </div>
+                ))}
+                {casesList.length === 0 && (
+                  <div className="col-span-full text-center py-10 animate-fadeIn">
+                    <p className="text-xl">Нет доступных дел</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -457,6 +497,7 @@ export default function Home() {
           number={expandedCase.data.number}
           title={expandedCase.data.title}
           description={expandedCase.data.description}
+          rewardXp={expandedCase.data.rewardXp}
           onClose={() => handleExpandCase(false, expandedCase.data!)}
         />
       )}
@@ -467,27 +508,28 @@ export default function Home() {
     <AuthProvider>
       <main className="min-h-screen flex flex-col p-10 relative">
         {/* Хедер (всегда видимый) */}
-        <Header onSmoothScroll={handleSmoothScroll} />
+        <Header 
+          onSmoothScroll={handleSmoothScroll}
+          caseTitles={caseTitles}
+        />
 
         {/* Модальное окно авторизации */}
         <AuthModal 
           isOpen={isAuthModalOpen} 
           onClose={() => {
             setIsAuthModalOpen(false);
-            setPendingCaseData(null);
           }}
           onAuthSuccess={handleAuthSuccess}
         />
 
         {/* Содержимое развернутой карточки или основной контент - отображаем только на клиенте */}
-        {isClient ? (
-          expandedCase.isExpanded ? renderExpandedCase() : renderMainContent()
-        ) : (
-          // Заглушка для серверного рендеринга
+        {isLoading ? (
           <div className="w-full min-h-[80vh] flex items-center justify-center">
-            <p className="text-xl">Загрузка...</p>
+            <Loader />
           </div>
-        )}
+        ) : isClient ? (
+          expandedCase.isExpanded ? renderExpandedCase() : renderMainContent()
+        ) : null}
       </main>
     </AuthProvider>
   )

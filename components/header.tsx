@@ -5,20 +5,20 @@ import { ProfilePopup } from './profile-popup';
 
 interface HeaderProps {
   onSmoothScroll: (e: React.MouseEvent<HTMLAnchorElement>) => void;
+  caseTitles?: string[];
 }
 
-export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
+export const Header = memo(function Header({ onSmoothScroll, caseTitles = [] }: HeaderProps) {
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
   
-  const titles = [
-    "УБИЙСТВО НА РАССВЕТЕ",
-    "ЗАГАДКА ЗАКРЫТОГО КАБИНЕТА",
-    "ПРОПАВШИЙ КАРТЕЛЬ"
+  // Используем переданные заголовки или пустоту, если список пуст
+  const titles = caseTitles.length > 0 ? caseTitles : [
+    ""
   ];
   
-  // Функция для определения стиля на основе полного заголовка, а не только напечатанной части
+  // Функция для определения стиля на основе полного заголовка
   const getTitleStyle = (currentTitleIndex: number) => {
     const fullTitle = titles[currentTitleIndex];
     return {
@@ -34,7 +34,7 @@ export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
   };
   
   // Инициализируем typedText первым символом первого заголовка
-  const [typedText, setTypedText] = useState(titles[0].charAt(0));
+  const [typedText, setTypedText] = useState(titles[0]?.charAt(0) || "");
   const typingRef = useRef<number | null>(null);
   
   // Ref для отслеживания состояния печати
@@ -46,6 +46,22 @@ export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
   });
 
   useEffect(() => {
+    // Сбрасываем состояние анимации при изменении списка заголовков
+    if (titles.length > 0) {
+      setTypedText(titles[0].charAt(0));
+      stateRef.current = {
+        titleIndex: 0,
+        charIndex: 1,
+        isDeleting: false,
+        pauseCount: 0
+      };
+    }
+  }, [titles]);
+
+  useEffect(() => {
+    // Если нет заголовков, не запускаем анимацию
+    if (titles.length === 0) return;
+
     // Функция эффекта печатной машинки
     const typeEffect = () => {
       const state = stateRef.current;
@@ -98,7 +114,7 @@ export const Header = memo(function Header({ onSmoothScroll }: HeaderProps) {
         window.clearTimeout(typingRef.current);
       }
     };
-  }, []); // Пустой массив зависимостей означает, что эффект запустится только при монтировании
+  }, [titles]); // Зависимость от titles, чтобы перезапускать анимацию при изменении списка
 
   const handleLoginClick = () => {
     setIsAuthModalOpen(true);

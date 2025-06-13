@@ -1,5 +1,6 @@
 from celery.result import AsyncResult
 from celery_app import app
+from django.core.exceptions import ObjectDoesNotExist
 from investigations.decorators import validate_case_access
 from investigations.tasks import execute_safe_sql
 from rest_framework import status
@@ -7,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from users.models import UserProgress, User
+from users.models import UserProgress, User, Case as UserCase
 from investigations.models import Case, Person, Suspect, CrimeScene, Evidence, Alibi
 
 from services.answer_checker import check_answer
@@ -18,8 +19,22 @@ from services.schema_creator import get_schema
 @permission_classes([IsAuthenticated])
 @validate_case_access
 def schema_view(request, case_id):
-    schema = get_schema(request.case.id) 
-    return Response(schema)
+    """
+    Get the database schema for a specific case.
+    """
+    try:
+        schema = get_schema(case_id)
+        return Response(schema)
+    except ObjectDoesNotExist as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 class ExecuteSQLView(APIView):
@@ -120,3 +135,23 @@ def get_case_details(request, case_id):
         return Response(case_data)
     except Case.DoesNotExist:
         return Response({'error': 'Case not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_case_list(request):
+    """
+    Возвращает список всех доступных дел с их основной информацией.
+    """
+    cases = UserCase.objects.using('users').all()
+    case_list = [
+        {
+            'id': case.id,
+            'title': case.title,
+            'description': case.description,
+            'required_xp': case.required_xp,
+            'reward_xp': case.reward_xp,
+        }
+        for case in cases
+    ]
+    return Response(case_list)

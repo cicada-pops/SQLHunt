@@ -72,12 +72,11 @@ MIDDLEWARE = [
 ]
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True  # Only for development!
+CORS_ALLOW_ALL_ORIGINS = False  # For security, we'll specify allowed origins
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
+    "http://localhost:3000",  
     "http://127.0.0.1:3000",
-    "https://sqlhunt.com:8000",
 ]
 
 CORS_ALLOW_METHODS = [
@@ -105,10 +104,9 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://sqlhunt.com:8000",
 ]
 
-CSRF_COOKIE_SAMESITE = None  # Changed from 'Lax' to None
+CSRF_COOKIE_SAMESITE = 'Lax'  # Changed from None to 'Lax' for better security
 CSRF_COOKIE_SECURE = False  # Set to True in production
 CSRF_COOKIE_HTTPONLY = False
 CSRF_USE_SESSIONS = False
@@ -116,7 +114,7 @@ CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
 
 # Session settings
-SESSION_COOKIE_SAMESITE = None  # Changed from 'Lax' to None
+SESSION_COOKIE_SAMESITE = 'Lax'  # Changed from None to 'Lax' for better security
 SESSION_COOKIE_SECURE = False  # Set to True in production
 SESSION_COOKIE_HTTPONLY = True
 
