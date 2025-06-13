@@ -14,7 +14,7 @@ def load_all_cases():
         if not file.startswith("case") or not file.endswith(".py"):
             continue
 
-        module_name = f"services.cases.{file[:-3]}"
+        module_name = f"services.case_loader.cases.{file[:-3]}"
         spec = importlib.util.find_spec(module_name)
 
         if not spec or not spec.loader:

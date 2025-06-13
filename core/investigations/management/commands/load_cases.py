@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from users.models import Case as UserCase
 
-from services.case_loader import load_all_cases
+from services.case_loader.case_loader import load_all_cases
 
 
 class Command(BaseCommand):

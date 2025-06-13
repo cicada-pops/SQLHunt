@@ -356,7 +356,6 @@ SOCIALACCOUNT_PROVIDERS = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CELERY_BROKER_URL = f"amqp://{os.getenv('RABBITMQ_USER')}:{os.getenv('RABBITMQ_PASSWORD')}@{os.getenv('RABBITMQ_HOST')}:{os.getenv('RABBITMQ_PORT')}/sqlhunt"
-CELERY_RESULT_BACKEND = f"db+postgresql+psycopg2://{os.getenv('DB_CELERY_USER')}:{os.getenv('DB_CELERY_PASSWORD')}@{os.getenv('DB_CELERY_HOST')}/celery_results"
-
+CELERY_RESULT_BACKEND = 'django-db'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30

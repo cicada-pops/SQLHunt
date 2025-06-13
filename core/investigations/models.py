@@ -88,7 +88,7 @@ class Case(models.Model):
                 name='date_closed_after_date_opened'
             )
         ]
-        db_table = 'case'
+        db_table = 'cases'
         app_label = 'investigations'
         managed = True
 

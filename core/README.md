@@ -2,6 +2,7 @@
 
 ## Структура проекта
 
+```
 /core/
 ├── README.md
 ├── manage.py
@@ -12,6 +13,7 @@
 ├── investigations/      # Учебная БД
 ├── services/
 └── tests/
+```
 
 ## Начало работы
 

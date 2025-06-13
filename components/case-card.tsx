@@ -671,7 +671,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
       
       let queryResult = null;
       let attempts = 0;
-      const maxAttempts = 60;
+      const maxAttempts = 3;
       const retryDelay = 500;
 
       // Основной цикл опроса статуса

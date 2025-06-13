@@ -288,7 +288,7 @@ class InvestigationsDataGenerator:
     def clear_all_data(self):
         tables = ['evidence', 'alibi', 'statement',
                 'suspect', 'charge', 'crime_scene',
-                'article', 'person', 'case']
+                'article', 'person', 'cases']
         
         with connections['investigations'].cursor() as cursor:
             for table in tables:
