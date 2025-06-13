@@ -1,7 +1,7 @@
-import Link from "next/link"
+import { ChevronDown, ChevronUp, Play, X } from "lucide-react"
 import Image from "next/image"
-import { X, Play, ChevronUp, ChevronDown } from "lucide-react"
-import { memo, useState, useRef, useEffect } from "react"
+import Link from "next/link"
+import { memo, useEffect, useRef, useState } from "react"
 import { useAuth } from "../contexts/auth-context"
 
 interface CaseCardProps {

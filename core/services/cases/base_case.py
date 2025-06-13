@@ -12,6 +12,7 @@ class BaseCase(ABC):
     required_xp: int
     reward_xp: int
     answer: str | int
+    short_description: str
     available_tables: list[str]
 
     @final
@@ -22,6 +23,7 @@ class BaseCase(ABC):
                     title=self.title,
                     defaults={
                         'description': self.description,
+                        'short_description': self.short_description,
                         'required_xp': self.required_xp,
                         'reward_xp': self.reward_xp,
                         'answer': self.answer,
@@ -36,7 +38,7 @@ class BaseCase(ABC):
 
                 investigation_case = self.create_investigation()
                 if investigation_case is None:
-                    raise RuntimeError("Метод create_investigation() вернул None — кейс не создан")
+                    raise RuntimeError("Расследование не создано")
                 
                 case.save()
                 return True
