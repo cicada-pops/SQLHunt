@@ -18,6 +18,6 @@ class AvailableTableAdmin(admin.ModelAdmin):
 
 @admin.register(Case)
 class CaseAdmin(admin.ModelAdmin):
-    list_display = ('id', 'description', 'title', 'required_xp', 'reward_xp', 'answer')
+    list_display = ('id', 'short_description', 'description', 'title', 'required_xp', 'reward_xp', 'answer')
     list_filter = ('required_xp', 'reward_xp',)
     search_fields = ('title',)

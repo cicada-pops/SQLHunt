@@ -2,14 +2,15 @@ from celery.result import AsyncResult
 from celery_app import app
 from django.core.exceptions import ObjectDoesNotExist
 from investigations.decorators import validate_case_access
+from investigations.models import Alibi, Case, CrimeScene, Evidence, Suspect
 from investigations.tasks import execute_safe_sql
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from users.models import UserProgress, User, Case as UserCase
-from investigations.models import Case, Person, Suspect, CrimeScene, Evidence, Alibi
+from users.models import Case as UserCase
+from users.models import User, UserProgress
 
 from services.answer_checker import check_answer
 from services.schema_creator import get_schema
@@ -149,6 +150,7 @@ def get_case_list(request):
             'id': case.id,
             'title': case.title,
             'description': case.description,
+            'short_description': case.short_description,
             'required_xp': case.required_xp,
             'reward_xp': case.reward_xp,
         }

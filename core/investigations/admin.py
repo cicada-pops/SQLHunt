@@ -20,7 +20,7 @@ class PersonAdmin(admin.ModelAdmin):
 
 @admin.register(Case)
 class CaseAdmin(admin.ModelAdmin):
-    search_fields = ['description', 'type', 'status']
+    search_fields = ['description', 'type', 'status', 'short_description']
 
 @admin.register(Suspect)
 class SuspectAdmin(admin.ModelAdmin):

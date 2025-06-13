@@ -1,21 +1,21 @@
-import { ChevronDown, ChevronUp, Play, X } from "lucide-react"
+import { ChevronDown, ChevronUp, Play, Share2, Table, X } from "lucide-react"
 import Image from "next/image"
-import { X, Play, ChevronUp, ChevronDown, Table, Share2 } from "lucide-react"
-import { memo, useState, useRef, useEffect, useCallback } from "react"
+import Link from "next/link"
+import { memo, useCallback, useEffect, useRef, useState } from "react"
+import ReactFlow, {
+    Background,
+    Controls,
+    Edge,
+    Handle,
+    MiniMap,
+    Node,
+    NodeProps,
+    Position,
+    useEdgesState,
+    useNodesState
+} from 'reactflow'
+import 'reactflow/dist/style.css'
 import { useAuth } from "../contexts/auth-context"
-import ReactFlow, { 
-  Node, 
-  Edge,
-  Background,
-  Controls,
-  MiniMap,
-  useNodesState,
-  useEdgesState,
-  Handle,
-  Position,
-  NodeProps
-} from 'reactflow';
-import 'reactflow/dist/style.css';
 import Loader from "./bounce-loader"
 
 // Определяем типы для колонки
