@@ -13,9 +13,10 @@ class Person(models.Model):
         message="Location can only contain latin letters, cyrillic letters and hyphen"
     )
     
-    name = models.CharField(max_length=100, validators=[name_validator])
-    date_birth = models.DateField()
-    description = models.TextField()
+    name = models.CharField(max_length=100, validators=[name_validator],
+                             help_text="ФИO человека")
+    date_birth = models.DateField(help_text="дата рождения")
+    description = models.TextField(help_text="Подробное описание человека: его внешний вид, привычки, работа")
     
     
     def clean(self):
@@ -24,7 +25,7 @@ class Person(models.Model):
             raise ValidationError("Date of birth must be at least 18 years ago.")
     
     def __str__(self):
-        return f'{self.name}'
+        return f'Person {self.name}'
     
     class Meta:
         db_table = 'person'
@@ -60,27 +61,54 @@ class Case(models.Model):
         ('другое', 'Другое'),
     ]
 
-    description = models.TextField()
-    date_opened = models.DateField()
-    date_closed = models.DateField(null=True)
-    type = models.CharField(max_length=30, choices=CASE_TYPE_CHOICES)  
-    status = models.CharField(max_length=15, choices=CASE_STATUS_CHOICES, default='открыто')
+    CASE_RESOLUTION_CHOICES = [
+        ('не раскрыто', 'Не раскрыто'),
+        ('раскрыто', 'Раскрыто'),
+    ]
+
+    description = models.TextField(help_text="описание дела и его обстоятельств.")
+    date_opened = models.DateField(help_text="дата открытия уголовного дела.")
+    date_closed = models.DateField(null=True, help_text="дата закрытия дела.")
+    type = models.CharField(max_length=30, choices=CASE_TYPE_CHOICES, 
+                            help_text="тип преступления, связанного с делом: кража, похищение...")  
+    status = models.CharField(max_length=15, choices=CASE_STATUS_CHOICES, 
+                              default='открыто', help_text="текущий процессуальный статус дела: открыто, закрыто, приостановлено")
+    resolution = models.CharField(max_length=11, choices=CASE_RESOLUTION_CHOICES, 
+                                  default='не раскрыто', help_text="отражает результат дела: раскрыто, не раскрыто.")
 
     def clean(self):
         super().clean()
-        
-        if self.date_opened > timezone.now().date():
+        today = timezone.now().date()
+
+        if self.date_opened > today:
             raise ValidationError('The opening date of the case cannot be in the future.')
 
-        if self.date_closed and self.status != 'закрыто':
-            raise ValidationError('If the case has a closing date, its status must be closed.')
+        if self.status == 'закрыто':
+            if not self.date_closed:
+                raise ValidationError('Closed cases must have a closing date.')
+        else:
+            if self.date_closed:
+                raise ValidationError('Only closed cases may have a closing date.')
         
         if self.status not in [s[0] for s in self.CASE_STATUS_CHOICES]:
             raise ValidationError(f"Invalid case status: {self.status}")
         
         if self.type not in [t[0] for t in self.CASE_TYPE_CHOICES]:
             raise ValidationError(f"Invalid case type: {self.type}")
-    
+
+        if self.resolution not in [r[0] for r in self.CASE_RESOLUTION_CHOICES]:
+            raise ValidationError(f"Invalid case resolution: {self.resolution}")
+        
+        if self.status == 'открыто' and self.resolution == 'раскрыто':
+            raise ValidationError('An open case cannot be marked as solved.')
+
+        if self.status == 'приостановлено' and self.resolution == 'раскрыто':
+            raise ValidationError('A suspended case cannot be marked as solved.')
+
+        if today - self.date_opened > timedelta(days=25*365):
+            if self.status != 'закрыто':
+                raise ValidationError('Cases older than 25 years must be closed.')
+        
     class Meta:
         constraints = [
             models.CheckConstraint(
@@ -93,7 +121,7 @@ class Case(models.Model):
         managed = True
 
     def __str__(self):
-        return f"{self.pk}"
+        return f"Case {self.pk}"
 
 
 class Suspect(models.Model):
@@ -105,8 +133,10 @@ class Suspect(models.Model):
         ('выпущен под залог', 'Выпущен под залог'),
     ]
     
-    person = models.OneToOneField(Person, on_delete=models.CASCADE)
-    status = models.CharField(max_length=21, choices=SUSPECT_STATUS)
+    person = models.OneToOneField(Person, on_delete=models.CASCADE, 
+                                  help_text="человек, связанный с этим подозреваемым.")
+    status = models.CharField(max_length=21, choices=SUSPECT_STATUS, 
+                              help_text="статус подозреваемого в рамках дела: в розыске, арестован...")
     cases = models.ManyToManyField(Case, through='SuspectCase')
     
     def clean(self):
@@ -120,11 +150,11 @@ class Suspect(models.Model):
         managed = True
         
     def __str__(self):
-        return f"{self.person.name}"
+        return f"Suspect {self.person.name}"
 
 class SuspectCase(models.Model):
-    case = models.ForeignKey(Case, on_delete=models.CASCADE)
-    suspect = models.ForeignKey(Suspect, on_delete=models.CASCADE)
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, help_text="дело, к которому относится подозреваемый.")
+    suspect = models.ForeignKey(Suspect, on_delete=models.CASCADE, help_text="подозреваемый, связанный с делом.")
     
     class Meta:
         db_table = 'suspect_case'
@@ -136,8 +166,8 @@ class SuspectCase(models.Model):
 
 
 class Article(models.Model):
-    id = models.IntegerField(primary_key=True)
-    description = models.TextField()
+    id = models.IntegerField(primary_key=True, help_text="номер статьи закона.")
+    description = models.TextField(help_text="описание содержания статьи.")
     
     class Meta:
         db_table = 'article'
@@ -145,13 +175,13 @@ class Article(models.Model):
         managed = True
 
     def __str__(self):
-        return f"{self.pk}"
+        return f"Article {self.pk}"
 
 
 class Charge(models.Model):
     CHARGE_STATUS = [
         ('ожидает решения', 'Ожидает решения'),
-        ('осуждён', 'Осуждён'),
+        ('осужден', 'Осужден'),
         ('отклонено', 'Отклонено'),
         ('прекращено', 'Прекращено'),
         ('аннулировано', 'Аннулировано'),
@@ -159,10 +189,13 @@ class Charge(models.Model):
         ('обжаловано', 'Обжаловано'),
     ]
 
-    article = models.ForeignKey(Article, on_delete=models.CASCADE)
-    suspect = models.ForeignKey(Suspect, on_delete=models.CASCADE)
-    date_accusation = models.DateField()
-    status = models.CharField(max_length=17, choices=CHARGE_STATUS)
+    article = models.ForeignKey(Article, on_delete=models.CASCADE,
+                                help_text="cтатья, по которой выдвинуто обвинение.")
+    suspect = models.ForeignKey(Suspect, on_delete=models.CASCADE,
+                                help_text="подозреваемый, против которого выдвинуто обвинение.")
+    date_accusation = models.DateField(help_text="дата предъявления обвинения.")
+    status = models.CharField(max_length=17, choices=CHARGE_STATUS,
+                              help_text="текущий статус обвинения: осужден, отклонено...")
     
     def clean(self):
         super().clean()
@@ -178,7 +211,7 @@ class Charge(models.Model):
         managed = True
     
     def __str__(self):
-        return f"{self.pk}"
+        return f"Charge {self.pk}"
 
 
 class Alibi(models.Model):
@@ -188,10 +221,12 @@ class Alibi(models.Model):
         ('ложное', 'Ложное'),
     ]
 
-    status = models.CharField(max_length=15, choices=ALIBI_STATUS)
-    case = models.ForeignKey(Case, on_delete=models.CASCADE)
-    description = models.TextField()
-    suspect = models.OneToOneField(Suspect, on_delete=models.CASCADE)
+    status = models.CharField(max_length=15, choices=ALIBI_STATUS, 
+                              help_text="cтатус алиби: подтверждено, не подтверждено, ложное.")
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, help_text="дело, к которому относится алиби.")
+    description = models.TextField(help_text="описание алиби и обстоятельств.")
+    suspect = models.OneToOneField(Suspect, on_delete=models.CASCADE, 
+                                   help_text="подозреваемый, для которого указывается алиби.")
     
     class Meta:
         db_table = 'alibi'
@@ -208,10 +243,11 @@ class Alibi(models.Model):
 
 
 class Statement(models.Model):
-    alibi = models.ForeignKey(Alibi, on_delete=models.CASCADE)
-    person = models.ForeignKey(Person, on_delete=models.CASCADE)
-    statement = models.TextField()
-    date_of_statement = models.DateField()
+    alibi = models.ForeignKey(Alibi, on_delete=models.CASCADE,
+                              help_text="алиби, к которому относится показания.")
+    person = models.ForeignKey(Person, on_delete=models.CASCADE, help_text="человек, давший заявление.")
+    statement = models.TextField(help_text="текст показания.")
+    date_of_statement = models.DateField(help_text="дата предоставления показания.")
 
     def clean(self):
         super().clean()
@@ -234,9 +270,11 @@ class CrimeScene(models.Model):
         message="Location can only contain latin letters, cyrillic letters, digits, spaces, and punctuation marks."
     )
 
-    location = models.CharField(max_length=300, validators=[location_validator])
-    date = models.DateField()
-    case = models.ForeignKey(Case, on_delete=models.CASCADE)
+    location = models.CharField(max_length=300, validators=[location_validator],
+                                help_text="адрес места преступления.")
+    date = models.DateField(help_text="дата преступления.")
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, 
+                             help_text="дело, к которому относится место преступления.")
     
     class Meta:
         db_table = 'crime_scene'
@@ -268,10 +306,12 @@ class Evidence(models.Model):
         ('другое', 'Другое'),
     ]
 
-    type = models.CharField(max_length=15, choices=EVIDENCE_TYPE)
-    description = models.TextField()
-    date = models.DateField()
-    scene = models.ForeignKey(CrimeScene, on_delete=models.CASCADE)
+    type = models.CharField(max_length=15, choices=EVIDENCE_TYPE, 
+                            help_text="тип доказательства, связанного с делом: физическое, цифровое...")
+    description = models.TextField(help_text="описание доказательства.")
+    date = models.DateField(help_text="Дата получения доказательства.")
+    scene = models.ForeignKey(CrimeScene, on_delete=models.CASCADE,
+                              help_text="место преступления, где было найдено доказательство.")
     
     class Meta:
         db_table = 'evidence'
@@ -287,4 +327,4 @@ class Evidence(models.Model):
             raise ValidationError(f"Invalid evidence type: {self.type}")
     
     def __str__(self):
-        return f"{self.pk}"
+        return f"Evidence {self.pk}"

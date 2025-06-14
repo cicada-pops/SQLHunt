@@ -85,7 +85,9 @@ class InvestigationsDataGenerator:
                   description=row["description"],
                   date_opened=date_opened,
                   date_closed=date_closed,
-                  type=row["type"]
+                  type=row["type"],
+                  resolution=row["resolution"],
+                  status=row["status"]
               )
               self.cases.append(case)
 
