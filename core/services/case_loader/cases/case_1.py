@@ -30,6 +30,7 @@ class SilverKey(BaseCase):
         "crime_scene",
         "evidence",
         "alibi",
+        "suspect_case",
     ]
     answer = 337
     short_description = "Тайная встреча в мотеле закончилась исчезновением. В деле — диктофон с тревожной записью и загадочный свидетель. Что произошло в «Серебряном Ключе»?"

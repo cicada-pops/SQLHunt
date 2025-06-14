@@ -4,7 +4,6 @@ import random
 from datetime import datetime, timedelta
 
 from django.db import connections
-from django.utils import timezone
 from investigations.models import (
     Alibi,
     Article,
@@ -31,7 +30,6 @@ from .utils.utils import (
     get_name,
     get_random_date_between,
     get_random_evidence_description,
-    get_random_testimony,
     get_sample_suspects,
     get_suspect_count,
     get_suspect_status,
@@ -163,34 +161,40 @@ class InvestigationsDataGenerator:
           )
           self.alibis.append(alibi)
 
-    def generate_statements(self, count: int = 100):
-      if not self.alibis or not self.persons:
-          raise ValueError("Сначала нужно сгенерировать alibis и persons")
-      
-      used_witnesses = set()
-      for _ in range(count):
-          alibi = random.choice(self.alibis)
-          suspect = alibi.suspect
-          description = alibi.description
+    def generate_statements(self, csv_path=None):
+        if not self.cases or not self.persons:
+            raise ValueError("Сначала нужно сгенерировать cases и persons")
+        
+        if csv_path is None:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            csv_path = os.path.join(base_dir, 'data', 'statement.csv')
 
-          available_witnesses = [p for p in self.persons if p.id != suspect.id and p.id not in used_witnesses]
-          if not available_witnesses:
-              available_witnesses = [p for p in self.persons if p.id != suspect.id]
-
-          witness = random.choice(available_witnesses)
-          used_witnesses.add(witness.id)
-
-          statement = get_random_testimony(description, witness.name, suspect.person.name)
-          date = timezone.now().date() - timedelta(days=random.randint(1, 10))
-
-          statement = Statement.objects.using('investigations').create(
-              statement=statement,
-              date_of_statement=date,
-              alibi=alibi,
-              person=witness
-          )
-          self.statements.append(statement)
-
+        with open(csv_path, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                try:
+                    case = next(c for c in self.cases if c.id == int(row["case_id"]))
+                    person = next(p for p in self.persons if p.id == int(row["person_id"]))
+                    
+                    date_of_statement = datetime.strptime(row["date_of_statement"], "%Y-%m-%d").date()
+                    if date_of_statement < case.date_opened:
+                        date_of_statement = case.date_opened + timedelta(days=random.randint(1, 30))
+                    
+                    statement = Statement.objects.using('investigations').create(
+                        case=case,
+                        person=person,
+                        statement=row["statement"],
+                        date_of_statement=date_of_statement
+                    )
+                    self.statements.append(statement)
+                    
+                except StopIteration:
+                    print(f"Не найдено case или person для statement: {row}")
+                    continue
+                except Exception as e:
+                    print(f"Ошибка при создании statement: {e}")
+                    continue
+                
     def generate_crime_scenes(self):
         used_locations = set()
 
@@ -296,7 +300,7 @@ class InvestigationsDataGenerator:
             for table in tables:
                 cursor.execute(f'TRUNCATE TABLE "{table}" RESTART IDENTITY CASCADE')
 
-    def run(self, persons=1500, suspects=500, charges=100, statements=100):
+    def run(self, persons=1500, suspects=500, charges=100):
         self.clear_all_data()
         self.generate_persons(count=persons)
         self.generate_cases()
@@ -305,7 +309,7 @@ class InvestigationsDataGenerator:
         self.generate_articles()
         self.generate_charges(count=charges)
         self.generate_alibis()
-        self.generate_statements(count=statements)
+        self.generate_statements()
         self.generate_crime_scenes()
         self.generate_evidence()
     

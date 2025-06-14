@@ -96,7 +96,6 @@ def get_schema(case_id):
 
                 columns = []
                 for col in columns_raw:
-                    print(col[0], model_fields_help.get(col[0], ""))
                     columns.append({
                         "name": col[0],
                         "type": col[1],

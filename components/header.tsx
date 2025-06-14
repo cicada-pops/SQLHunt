@@ -1,4 +1,4 @@
-import { useState, memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/auth-context';
 import { AuthModal } from './auth-modal';
 import { ProfilePopup } from './profile-popup';
@@ -159,7 +159,7 @@ export const Header = memo(function Header({ onSmoothScroll, caseTitles = [] }: 
         <div className="flex items-center justify-between mb-3">
           <div className="w-1/4 text-center">
             <a 
-              href="mailto:sqlhunt@gmail.com"
+              href="mailto:sqlhunt.team@gmail.com"
               className="text-3xl italic font-serif hover:opacity-80 cursor-pointer"
             >
               CONTACT

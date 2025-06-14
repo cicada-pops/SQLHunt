@@ -243,8 +243,8 @@ class Alibi(models.Model):
 
 
 class Statement(models.Model):
-    alibi = models.ForeignKey(Alibi, on_delete=models.CASCADE,
-                              help_text="алиби, к которому относится показания.")
+    case = models.ForeignKey(Case, on_delete=models.CASCADE,
+                              help_text="дело, к которому относится показания.")
     person = models.ForeignKey(Person, on_delete=models.CASCADE, help_text="человек, давший заявление.")
     statement = models.TextField(help_text="текст показания.")
     date_of_statement = models.DateField(help_text="дата предоставления показания.")
@@ -256,7 +256,7 @@ class Statement(models.Model):
         
     class Meta:
         db_table = 'statement'
-        unique_together = ('alibi', 'person')
+        unique_together = ('case', 'person')
         app_label = 'investigations'
         managed = True
 

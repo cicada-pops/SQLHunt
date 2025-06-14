@@ -10,7 +10,6 @@ class Command(BaseCommand):
         parser.add_argument('--persons', type=int, default=1500, help='Количество персон')
         parser.add_argument('--suspects', type=int, default=500, help='Количество подозреваемых')
         parser.add_argument('--charges', type=int, default=100, help='Количество обвинений')
-        parser.add_argument('--statements', type=int, default=100, help='Количество показаний')
         parser.add_argument('--clear', action='store_true', help='Очистить все данные и выйти')
 
     def handle(self, *args, **options):
@@ -27,6 +26,5 @@ class Command(BaseCommand):
             persons=options['persons'],
             suspects=options['suspects'],
             charges=options['charges'],
-            statements=options['statements']
         )
         self.stdout.write(self.style.SUCCESS("Генерация завершена успешно."))

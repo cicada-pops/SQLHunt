@@ -41,7 +41,7 @@ class AlibiAdmin(admin.ModelAdmin):
 
 @admin.register(Statement)
 class StatementAdmin(admin.ModelAdmin):
-    search_fields = ['statement', 'person__name', 'alibi__description']
+    search_fields = ['statement', 'person__name', 'case__description']
 
 @admin.register(CrimeScene)
 class CrimeSceneAdmin(admin.ModelAdmin):

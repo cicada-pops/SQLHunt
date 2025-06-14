@@ -3,21 +3,19 @@ import re
 import sqlparse
 from celery_app import app
 from django.db import connections
-from sqlglot import exp, parse_one
+from sqlglot import exp, parse
 from sqlparse.tokens import DML, Keyword
 
 FORBIDDEN_KEYWORDS = {
     'INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'TRUNCATE', 'CREATE',
-    'REPLACE', 'GRANT', 'REVOKE', 'INTO', 'MERGE', 'CALL'
+    'REPLACE', 'GRANT', 'REVOKE', 'INTO', 'MERGE', 'CALL', 'EXEC'
 }
 
 FORBIDDEN_PATTERNS = [
     r'--',                
     r'/\*.*\*/',         
-    r';',               
-    r'\bWITH\b',         
+    r';',                   
     r'\bRECURSIVE\b',
-    r'\bUNION\b',
     r'\bINTO\b',
 ]
 
@@ -32,10 +30,16 @@ def has_limit(token_list) -> bool:
 
 def extract_tables(sql: str) -> set:
     try:
-        parsed = parse_one(sql)
-        return {t.name for t in parsed.find_all(exp.Table)}
+        expressions = parse(sql)
+        tables = set()
+        for tree in expressions:
+            tables.update(
+                t.name for t in tree.find_all(exp.Table) if t and t.name # type: ignore
+                )
+        return tables
     except Exception:
         return set()
+
     
 def contains_forbidden_keywords(token_list) -> bool:
     for token in token_list.tokens:
@@ -54,18 +58,18 @@ def contains_forbidden_patterns(raw_sql: str) -> bool:
 
 def validate_and_prepare_query(raw_sql: str, allowed_user_tables: set[str]) -> str:
     cleaned_sql = sqlparse.format(raw_sql.strip(), strip_comments=True).strip().rstrip(';')
-
-    if contains_forbidden_patterns(cleaned_sql):
-        raise ValueError("Запрос содержит запрещённые конструкции.")
-
     parsed = sqlparse.parse(cleaned_sql)
-    if not parsed or len(parsed) != 1:
-        raise ValueError("Разрешён только один SELECT-запрос.")
+
+    if not parsed:
+        raise ValueError("Пустой или некорректный SQL-запрос.")
 
     statement = parsed[0]
 
     if statement.get_type() != 'SELECT':
         raise ValueError("Разрешён только SELECT-запрос.")
+
+    if contains_forbidden_patterns(cleaned_sql):
+        raise ValueError("Запрос содержит запрещённые конструкции.")
 
     if contains_forbidden_keywords(statement):
         raise ValueError("Запрос содержит запрещённые SQL-операции.")
