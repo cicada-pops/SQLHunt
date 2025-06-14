@@ -14,9 +14,9 @@ class Person(models.Model):
     )
     
     name = models.CharField(max_length=100, validators=[name_validator],
-                             help_text="ФИO человека")
-    date_birth = models.DateField(help_text="дата рождения")
-    description = models.TextField(help_text="Подробное описание человека: его внешний вид, привычки, работа")
+                             help_text="ФИO человека.")
+    date_birth = models.DateField(help_text="дата рождения.")
+    description = models.TextField(help_text="Подробное описание человека: его внешний вид, привычки, работа.")
     
     
     def clean(self):
@@ -72,7 +72,7 @@ class Case(models.Model):
     type = models.CharField(max_length=30, choices=CASE_TYPE_CHOICES, 
                             help_text="тип преступления, связанного с делом: кража, похищение...")  
     status = models.CharField(max_length=15, choices=CASE_STATUS_CHOICES, 
-                              default='открыто', help_text="текущий процессуальный статус дела: открыто, закрыто, приостановлено")
+                              default='открыто', help_text="текущий процессуальный статус дела: открыто, закрыто, приостановлено.")
     resolution = models.CharField(max_length=11, choices=CASE_RESOLUTION_CHOICES, 
                                   default='не раскрыто', help_text="отражает результат дела: раскрыто, не раскрыто.")
 

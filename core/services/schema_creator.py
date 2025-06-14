@@ -1,5 +1,6 @@
-from django.db import connections
+from django.apps import apps
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import connections
 from users.models import AvailableTable
 
 
@@ -77,15 +78,33 @@ def get_schema(case_id):
                 ]
                 foreign_columns = {fk["fromColumn"] for fk in foreign_keys}
 
+                investigations_app = apps.get_app_config('investigations')
+                investigations_models = investigations_app.get_models()
+
+                model = None
+                for m in investigations_models:
+                    if m._meta.db_table == table:
+                        model = m
+                        break
+
+                model_fields_help = {}
+                if model:
+                    for field in model._meta.fields:
+                        help_text = field.help_text or ""
+                        model_fields_help[field.name] = help_text
+                        model_fields_help[field.column] = help_text  
+
                 columns = []
                 for col in columns_raw:
+                    print(col[0], model_fields_help.get(col[0], ""))
                     columns.append({
                         "name": col[0],
                         "type": col[1],
                         "isPrimary": col[2],
                         "isForeign": col[3] or col[0] in foreign_columns,
+                        "help_text":  model_fields_help.get(col[0], ""),
                     })
-
+                
                 schema.append({
                     "tableName": table,
                     "columns": columns,
