@@ -157,7 +157,7 @@ class SuspectCase(models.Model):
     suspect = models.ForeignKey(Suspect, on_delete=models.CASCADE, help_text="подозреваемый, связанный с делом.")
     
     class Meta:
-        db_table = 'suspect_case'
+        db_table = 'suspect_cases'
         app_label = 'investigations'
         managed = True
         

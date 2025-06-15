@@ -8,8 +8,7 @@ from users.models import Case, User, UserProgress
 @receiver(post_save, sender=Case)
 def create_userprogress_for_all_users(sender, instance, created, **kwargs):
     if created:
-        users = User.objects.using('users').filter(xp__gte=instance.required_xp)
-        for user in users:
+        for user in User.objects.using('users').all():
             try:
                 with transaction.atomic(using='users'):
                     UserProgress.objects.using('users').get_or_create(

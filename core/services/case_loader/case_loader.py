@@ -10,10 +10,8 @@ CASES_DIR = Path(__file__).parent / "cases"
 def load_all_cases():
     case_classes = []
 
-    for file in os.listdir(CASES_DIR):
-        if not file.startswith("case") or not file.endswith(".py"):
-            continue
-
+    files = sorted(f for f in os.listdir(CASES_DIR) if f.startswith("case") and f.endswith(".py"))
+    for file in files:
         module_name = f"services.case_loader.cases.{file[:-3]}"
         spec = importlib.util.find_spec(module_name)
 

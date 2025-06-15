@@ -110,19 +110,6 @@ const nodeTypes = {
   tableNode: TableNode,
 };
 
-// Функция для нормализации текста
-const normalizeText = (text?: string) => {
-  if (!text) return '';
-  return text
-    .trim()
-    // Заменяем множественные пустые строки на одну
-    .replace(/\n\s*\n\s*\n/g, '\n\n')
-    // Убираем пробелы в начале строк
-    .replace(/^\s+/gm, '')
-    // Убираем пробелы в конце строк
-    .replace(/\s+$/gm, '');
-};
-
 interface CaseCardProps {
   number: string
   title: string
@@ -212,7 +199,7 @@ export const CaseCard = memo(function CaseCard({
           <p className="text-sm mb-4 text-justify whitespace-pre-line" style={{ 
             fontFamily: "var(--font-rationalist-light)",
             lineHeight: "1.5"
-          }}>{normalizeText(description)}</p>
+          }}>{description}</p>
 
           <div className="text-right">
             <span 
@@ -263,7 +250,7 @@ export const CaseCard = memo(function CaseCard({
               <p className="text-sm mb-4 text-justify whitespace-pre-line" style={{ 
                 fontFamily: "var(--font-rationalist-light)",
                 lineHeight: "1.5"
-              }}>{normalizeText(description)}</p>
+              }}>{description}</p>
               <div className="text-right">
                 <span 
                   className="inline-block relative font-bold group"
@@ -318,7 +305,7 @@ export const CaseCard = memo(function CaseCard({
           <p className="text-sm mb-4 text-justify whitespace-pre-line" style={{ 
             fontFamily: "var(--font-rationalist-light)",
             lineHeight: "1.5"
-          }}>{normalizeText(description)}</p>
+          }}>{description}</p>
 
           <div className="text-right">
             {isLocked ? (
@@ -809,7 +796,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
             fontFamily: "var(--font-rationalist-light)",
             lineHeight: "1.6"
           }}>
-            {normalizeText(description)}
+            {description}
           </p>
         </div>
       </div>
