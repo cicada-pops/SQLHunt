@@ -15,6 +15,7 @@ interface CaseData {
   description: string;
   requiredExp: number;
   rewardXp: number;
+  isMarked?: boolean;
 }
 
 const styles = `
@@ -65,6 +66,7 @@ function HomeContent() {
     description: string;
     requiredExp: number;
     rewardXp: number;
+    isMarked?: boolean;
   }>>([]);
   const [caseTitles, setCaseTitles] = useState<string[]>([]); // Добавляем состояние для заголовков
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -166,7 +168,8 @@ function HomeContent() {
           const token = localStorage.getItem('token');
           console.log('Пробуем загрузить с токеном:', token);
           
-          const response = await fetch('https://sqlhunt.com:8000/api/cases/', {
+          // Загружаем список дел
+          const casesResponse = await fetch('https://sqlhunt.com:8000/api/cases/', {
             method: 'GET',
             headers: { 
               'Authorization': `Bearer ${token}`,
@@ -176,23 +179,41 @@ function HomeContent() {
             mode: 'cors',
           });
           
-          console.log('Ответ от сервера:', response.status);
-          
-          if (!response.ok) {
-            throw new Error(`Ошибка загрузки дел: ${response.status}`);
+          if (!casesResponse.ok) {
+            throw new Error(`Ошибка загрузки дел: ${casesResponse.status}`);
           }
           
-          const data = await response.json();
-          console.log('Получены дела:', data);
+          const casesData = await casesResponse.json();
           
-          const cases = data.map((item: any) => ({
+          // Загружаем прогресс пользователя
+          const progressResponse = await fetch('https://sqlhunt.com:8000/api/users/userprogress/', {
+            method: 'GET',
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json',
+            },
+          });
+          
+          if (!progressResponse.ok) {
+            throw new Error(`Ошибка загрузки прогресса: ${progressResponse.status}`);
+          }
+          
+          const progressData = await progressResponse.json();
+          
+          // Создаем Set с ID завершенных дел для быстрого поиска
+          const completedCases = new Set(progressData.map((progress: any) => progress.case_id));
+          
+          // Маппим дела с учетом прогресса
+          const cases = casesData.map((item: any) => ({
             number: String(item.id),
             title: item.title,
             description: item.description,
             requiredExp: item.required_xp,
             rewardXp: item.reward_xp,
+            isMarked: completedCases.has(item.id) // Помечаем завершенные дела
           }));
           
+          console.log('Получены дела с прогрессом:', cases);
           setCasesList(cases);
           // Обновляем список заголовков
           setCaseTitles(cases.map((c: CaseData) => c.title.toUpperCase()));
@@ -472,7 +493,7 @@ function HomeContent() {
                         number={caseItem.number}
                         title={caseItem.title}
                         description={caseItem.description}
-                        isMarked={false}
+                        isMarked={caseItem.isMarked || false}
                         requiredExp={caseItem.requiredExp}
                         rewardXp={caseItem.rewardXp}
                         userExp={user?.experience || 0}

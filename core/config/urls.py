@@ -26,6 +26,7 @@ urlpatterns = [
     path('/', include('authentication.urls')),
     path('', include('investigations.urls')),
     path("signup/", signup, name="socialaccount_signup"),
+    path('api/users/', include('users.urls')),
 ]
 
 if settings.DEBUG:
