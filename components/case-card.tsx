@@ -837,9 +837,6 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
       if (data.correct) {
         setSubmitSuccess(true);
         
-        // Обновляем данные пользователя с сервера
-        await refreshUserData();
-        
         // Перенаправляем на главную страницу через 2 секунды
         setTimeout(() => {
           window.location.href = '/';
