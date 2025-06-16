@@ -12,6 +12,7 @@ import Loader from "../components/bounce-loader"
 interface CaseData {
   number: string;
   title: string;
+  short_description: string;
   description: string;
   requiredExp: number;
   rewardXp: number;
@@ -60,6 +61,7 @@ function HomeContent() {
   const [casesList, setCasesList] = useState<Array<{
     number: string;
     title: string;
+    short_description: string;
     description: string;
     requiredExp: number;
     rewardXp: number;
@@ -165,6 +167,7 @@ function HomeContent() {
         const casesWithProgress = casesData.map((item: any) => ({
           number: item.id.toString(),
           title: item.title,
+          short_description: item.short_description,
           description: item.description,
           requiredExp: item.required_xp,
           rewardXp: item.reward_xp,
@@ -372,7 +375,10 @@ function HomeContent() {
         setMainContentState('hidden');
         setExpandedCase({
           isExpanded: true,
-          data: caseData,
+          data: {
+            ...caseData,
+            description: caseData.description // Используем полное описание при открытии карточки
+          },
           isClosing: false
         });
       }, 500);
@@ -477,8 +483,9 @@ function HomeContent() {
                       key={caseItem.number}
                       number={caseItem.number}
                       title={caseItem.title}
-                      description={caseItem.description}
-                        isMarked={caseItem.isMarked || false}
+                      description={caseItem.short_description}
+                      fullDescription={caseItem.description}
+                      isMarked={caseItem.isMarked || false}
                       requiredExp={caseItem.requiredExp}
                       rewardXp={caseItem.rewardXp}
                       userExp={user?.experience || 0}

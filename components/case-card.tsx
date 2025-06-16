@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Play, Share2, Table, X } from "lucide-react"
+import { ChevronDown, ChevronUp, Key, Link as LinkIcon, Play, Send, Share2, Table, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { memo, useCallback, useEffect, useRef, useState } from "react"
@@ -18,6 +18,7 @@ import 'reactflow/dist/style.css'
 import { useAuth } from "../contexts/auth-context"
 import Loader from "./bounce-loader"
 import authService from "../services/auth"
+import styles from './case-card.module.css'
 
 // Определяем типы для колонки
 interface Column {
@@ -25,6 +26,7 @@ interface Column {
   type: string;
   isPrimary: boolean;
   isForeign: boolean;
+  help_text: string;
 }
 
 // Определяем тип для данных узла
@@ -91,8 +93,16 @@ const TableNode = ({ data }: NodeProps<TableNodeData>) => {
                   <td className="py-2 pr-2">
                     <div className="flex items-center gap-1">
                       {col.name}
-                      {col.isPrimary && <span title="Первичный ключ">🔑</span>}
-                      {col.isForeign && <span title="Внешний ключ">🔗</span>}
+                      {col.isPrimary && (
+                        <span title="Первичный ключ">
+                          <Key className="w-3 h-3 text-[#FF8A00]" />
+                        </span>
+                      )}
+                      {col.isForeign && (
+                        <span title="Внешний ключ">
+                          <LinkIcon className="w-3 h-3 text-[#FF8A00]" />
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="py-2 pl-2 text-gray-500">{col.type}</td>
@@ -114,7 +124,8 @@ const nodeTypes = {
 interface CaseCardProps {
   number: string
   title: string
-  description: string
+  description: string // это будет short_description
+  fullDescription: string // это будет description
   isMarked: boolean
   className?: string
   requiredExp: number
@@ -123,7 +134,8 @@ interface CaseCardProps {
   onExpandCase?: (isExpanded: boolean, caseData: { 
     number: string; 
     title: string; 
-    description: string; 
+    short_description: string;
+    description: string;
     requiredExp: number;
     rewardXp: number;
   }) => void
@@ -134,6 +146,7 @@ export const CaseCard = memo(function CaseCard({
   number, 
   title, 
   description, 
+  fullDescription,
   isMarked,
   requiredExp,
   rewardXp,
@@ -178,7 +191,14 @@ export const CaseCard = memo(function CaseCard({
     
     // Уведомляем родительский компонент об открытии карточки
     if (onExpandCase) {
-      onExpandCase(true, { number, title, description, requiredExp, rewardXp });
+      onExpandCase(true, { 
+        number, 
+        title, 
+        short_description: description, 
+        description: fullDescription,
+        requiredExp, 
+        rewardXp 
+      });
     } else {
       setIsExpanded(true);
     }
@@ -188,7 +208,14 @@ export const CaseCard = memo(function CaseCard({
     setIsExpanded(false);
     // Уведомляем родительский компонент о закрытии карточки
     if (onExpandCase) {
-      onExpandCase(false, { number, title, description, requiredExp, rewardXp });
+      onExpandCase(false, { 
+        number, 
+        title, 
+        short_description: description, 
+        description: fullDescription,
+        requiredExp, 
+        rewardXp 
+      });
     }
   };
 
@@ -390,7 +417,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   onClose: () => void;
   className?: string;
 }) {
-  const tabs = ["SQL-запросы", "Схема БД", "Заметки", "Ответы"];
+  const tabs = ["SQL-запросы", "Схема БД", "Заметки", "Ответ"];
   const [activeTab, setActiveTab] = useState(tabs[0]);
   const [isClosing, setIsClosing] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -421,6 +448,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
       type: string;
       isPrimary: boolean;
       isForeign: boolean;
+      help_text: string;
     }>;
     foreignKeys: Array<ForeignKey>;
   }> | null>(null);
@@ -997,10 +1025,25 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                           </h4>
                           <div className="text-white text-sm space-y-1">
                             {table.columns.map((col, colIndex) => (
-                              <div key={colIndex} className="flex items-center gap-2">
-                                <span>{col.name}</span>
-                                {col.isPrimary && <span title="Первичный ключ" className="text-[#FF8A00]">🔑</span>}
-                                {col.isForeign && <span title="Внешний ключ" className="text-[#FF8A00]">🔗</span>}
+                              <div key={colIndex} className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <div className="w-5 flex items-center gap-1">
+                                    {col.isPrimary && (
+                                      <span title="Первичный ключ">
+                                        <Key className="w-3 h-3 text-[#FF8A00]" />
+                                      </span>
+                                    )}
+                                    {col.isForeign && (
+                                      <span title="Внешний ключ">
+                                        <LinkIcon className="w-3 h-3 text-[#FF8A00]" />
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span>{col.name}</span>
+                                </div>
+                                <span className="text-gray-400 text-xs">
+                                  {col.help_text || '—'}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -1132,20 +1175,32 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                             <tr className="bg-[rgba(255,168,16,0.4)]">
                               <th className="p-2 text-left border border-black" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Колонка</th>
                               <th className="p-2 text-left border border-black" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Тип данных</th>
-                              <th className="p-2 text-left border border-black" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Первичный ключ</th>
-                              <th className="p-2 text-left border border-black" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Внешний ключ</th>
+                              <th className="p-2 text-left border border-black" style={{ fontFamily: "var(--font-rationalist-bold)" }}>Описание</th>
                             </tr>
                           </thead>
                           <tbody>
                             {table.columns.map((column, columnIndex) => (
                               <tr key={columnIndex} className={columnIndex % 2 === 0 ? 'bg-[rgba(255,168,16,0.1)]' : ''}>
-                                <td className="p-2 border border-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>{column.name}</td>
+                                <td className="p-2 border border-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                                  <div className="flex items-center justify-between">
+                                    <span>{column.name}</span>
+                                    <div className="flex items-center gap-1">
+                                      {column.isPrimary && (
+                                        <span title="Первичный ключ">
+                                          <Key className="w-4 h-4 text-[#FF8A00]" />
+                                        </span>
+                                      )}
+                                      {column.isForeign && (
+                                        <span title="Внешний ключ">
+                                          <LinkIcon className="w-4 h-4 text-[#FF8A00]" />
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
                                 <td className="p-2 border border-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>{column.type}</td>
                                 <td className="p-2 border border-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
-                                  {column.isPrimary ? 'Да' : 'Нет'}
-                                </td>
-                                <td className="p-2 border border-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
-                                  {column.isForeign ? 'Да' : 'Нет'}
+                                  {column.help_text || '—'}
                                 </td>
                               </tr>
                             ))}
@@ -1207,7 +1262,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
           </div>
         )}
 
-        {activeTab === "Ответы" && (
+        {activeTab === "Ответ" && (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col">
               {/* Шапка окна ответов */}
@@ -1221,61 +1276,64 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
               <div className="p-4 bg-[#241C13] text-white">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="block font-bold" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
-                      Введите ваш ответ:
-                    </label>
-                    <input
-                      type="text"
-                      value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
-                      className="w-full p-2 bg-[#1a1a1a] border border-[#FF8A00] rounded"
-                      placeholder="ответ..."
-                      onKeyDown={(e) => {
-                        // Проверяем Ctrl/Cmd + Enter
-                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                          e.preventDefault();
-                          if (!isSubmitting && !submitSuccess) {
-                            handleSubmitAnswer();
-                          }
+                    <div className="flex items-center gap-4">
+                      <label className="font-bold whitespace-nowrap" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
+                        Введите ваш ответ:
+                      </label>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={answer}
+                        onChange={(e) => setAnswer(e.target.value)}
+                        className={`flex-1 p-2 bg-[#1a1a1a] border rounded ${
+                          submitError ? 'border-red-500 placeholder-red-500' : 
+                          submitSuccess ? 'border-green-500 placeholder-green-500' : 
+                          'border-[#FF8A00]'
+                        }`}
+                        placeholder={
+                          submitError ? submitError :
+                          submitSuccess ? 'Ответ верен! Перенаправление на главную страницу...' :
+                          'ответ...'
                         }
-                        // Проверяем просто Enter
-                        else if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (!isSubmitting && !submitSuccess) {
-                            handleSubmitAnswer();
+                        onKeyDown={(e) => {
+                          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' || e.key === 'Enter') {
+                            e.preventDefault();
+                            if (!isSubmitting && !submitSuccess) {
+                              handleSubmitAnswer();
+                            }
                           }
-                        }
-                      }}
-                    />
+                        }}
+                      />
+                      <button
+                        onClick={handleSubmitAnswer}
+                        disabled={isSubmitting || submitSuccess}
+                        className={styles['continue-application']}
+                        style={{
+                          cursor: isSubmitting || submitSuccess ? 'not-allowed' : 'pointer',
+                          opacity: isSubmitting || submitSuccess ? '0.7' : '1',
+                          fontFamily: 'var(--font-rationalist-bold)',
+                          background: 'var(--background)'
+                        }}
+                        title={`Отправить ответ (${navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter или Enter)`}
+                      >
+                        <div className={styles.buttonContainer}>
+                          <div className={styles.pencil} />
+                          <div className={styles.folder}>
+                            <div className={styles.folderTop}>
+                              <svg viewBox="0 0 24 27" className={styles.folderSvg}>
+                                <path d="M1,0 L23,0 C23.5522847,-1.01453063e-16 24,0.44771525 24,1 L24,8.17157288 C24,8.70200585 23.7892863,9.21071368 23.4142136,9.58578644 L20.5857864,12.4142136 C20.2107137,12.7892863 20,13.2979941 20,13.8284271 L20,26 C20,26.5522847 19.5522847,27 19,27 L1,27 C0.44771525,27 6.76353751e-17,26.5522847 0,26 L0,1 C-6.76353751e-17,0.44771525 0.44771525,1.01453063e-16 1,0 Z" />
+                              </svg>
+                            </div>
+                            <div className={styles.paper} />
+                          </div>
+                        </div>
+                        <span className="block min-w-[120px]">
+                          {isSubmitting ? 'Отправка...' : submitSuccess ? 'Успешно!' : 'Отправить ответ'}
+                        </span>
+                      </button>
+                    </div>
                   </div>
-
-                  {/* Сообщения об ошибке или успехе */}
-                  {submitError && (
-                    <div className="text-red-500 p-2 border border-red-500 rounded">
-                      {submitError}
-                    </div>
-                  )}
-                  
-                  {submitSuccess && (
-                    <div className="text-green-500 p-2 border border-green-500 rounded">
-                      Ответ верен! Перенаправление на главную страницу...
-                    </div>
-                  )}
-
-                  {/* Кнопка отправки */}
-                  <button
-                    onClick={handleSubmitAnswer}
-                    disabled={isSubmitting || submitSuccess}
-                    className={`w-full py-2 px-4 rounded font-bold ${
-                      isSubmitting || submitSuccess
-                        ? 'bg-gray-500 cursor-not-allowed'
-                        : 'bg-[#FF8A00] hover:bg-[#FF9A20]'
-                    }`}
-                    style={{ fontFamily: "var(--font-rationalist-bold)" }}
-                    title={`Отправить ответ (${navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter или Enter)`}
-                  >
-                    {isSubmitting ? 'Отправка...' : submitSuccess ? 'Успешно!' : 'Отправить ответ'}
-                  </button>
                 </div>
               </div>
             </div>
