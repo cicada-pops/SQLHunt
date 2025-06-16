@@ -19,6 +19,7 @@ import { useAuth } from "../contexts/auth-context"
 import Loader from "./bounce-loader"
 import authService from "../services/auth"
 import styles from './case-card.module.css'
+import { useRouter } from "next/router"
 
 // Определяем типы для колонки
 interface Column {
@@ -393,7 +394,8 @@ export const CaseCard = memo(function CaseCard({
             title={title} 
             description={description} 
             rewardXp={rewardXp}
-            onClose={handleCloseCase} 
+            onClose={handleCloseCase}
+            onNavigateToHome={() => window.location.href = '/'}
           />
         </div>
       )}
@@ -408,6 +410,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   description,
   rewardXp,
   onClose,
+  onNavigateToHome,
   className = ""
 }: {
   number: string;
@@ -415,6 +418,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   description: string;
   rewardXp: number;
   onClose: () => void;
+  onNavigateToHome: () => void;
   className?: string;
 }) {
   const tabs = ["SQL-запросы", "Схема БД", "Заметки", "Ответ"];
@@ -435,6 +439,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [isWrongAnswer, setIsWrongAnswer] = useState(false);
   
   // Добавляем состояние для заметок
   const [notes, setNotes] = useState("");
@@ -856,10 +861,11 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
 
   // Обновляем функцию для отправки ответа
   const handleSubmitAnswer = async () => {
+    if (!answer.trim()) return;
+    
     setIsSubmitting(true);
     setSubmitError(null);
-    setSubmitSuccess(false);
-    
+
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -867,34 +873,37 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
       }
 
       const response = await fetch(`https://sqlhunt.com:8000/api/cases/${number}/submit-answer/`, {
-        method: 'POST',
+        method: "POST",
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ answer })
+        body: JSON.stringify({ answer }),
       });
 
-      const data = await response.json();
-      
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.error || 'Ошибка при отправке ответа');
       }
 
+      const data = await response.json();
+
       if (data.correct) {
         setSubmitSuccess(true);
-        
-        // Перенаправляем на главную страницу через 2 секунды
         setTimeout(() => {
-          window.location.href = '/';
+          onNavigateToHome();
         }, 2000);
       } else {
-        throw new Error('Ответ неверен');
+        setIsWrongAnswer(true);
+        setAnswer(""); // Очищаем поле ввода
+        setTimeout(() => {
+          setIsWrongAnswer(false);
+        }, 2000);
       }
-    } catch (err) {
-      console.error('Submit answer error:', err);
-      setSubmitError(err instanceof Error ? err.message : 'Произошла неизвестная ошибка');
+    } catch (error) {
+      console.error('Submit answer error:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Произошла неизвестная ошибка');
     } finally {
       setIsSubmitting(false);
     }
@@ -1286,13 +1295,13 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                         type="text"
                         value={answer}
                         onChange={(e) => setAnswer(e.target.value)}
-                        className={`flex-1 p-2 bg-[#1a1a1a] border rounded ${
-                          submitError ? 'border-red-500 placeholder-red-500' : 
+                        className={`flex-1 p-2 bg-[#1a1a1a] border rounded transition-colors duration-300 ${
+                          isWrongAnswer ? 'border-red-500 placeholder-red-500' : 
                           submitSuccess ? 'border-green-500 placeholder-green-500' : 
                           'border-[#FF8A00]'
                         }`}
                         placeholder={
-                          submitError ? submitError :
+                          isWrongAnswer ? 'Ответ неверен' :
                           submitSuccess ? 'Ответ верен! Перенаправление на главную страницу...' :
                           'ответ...'
                         }
@@ -1307,11 +1316,11 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                       />
                       <button
                         onClick={handleSubmitAnswer}
-                        disabled={isSubmitting || submitSuccess}
+                        disabled={isSubmitting || submitSuccess || isWrongAnswer}
                         className={styles['continue-application']}
                         style={{
-                          cursor: isSubmitting || submitSuccess ? 'not-allowed' : 'pointer',
-                          opacity: isSubmitting || submitSuccess ? '0.7' : '1',
+                          cursor: isSubmitting || submitSuccess || isWrongAnswer ? 'not-allowed' : 'pointer',
+                          opacity: isSubmitting || submitSuccess || isWrongAnswer ? '0.7' : '1',
                           fontFamily: 'var(--font-rationalist-bold)',
                           background: 'var(--background)'
                         }}
@@ -1329,7 +1338,10 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                           </div>
                         </div>
                         <span className="block min-w-[120px]">
-                          {isSubmitting ? 'Отправка...' : submitSuccess ? 'Успешно!' : 'Отправить ответ'}
+                          {isSubmitting ? 'Отправка...' : 
+                           submitSuccess ? 'Успешно!' : 
+                           isWrongAnswer ? 'Ответ неверен' :
+                           'Отправить ответ'}
                         </span>
                       </button>
                     </div>

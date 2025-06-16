@@ -9,19 +9,22 @@ def normalize_answer(answer):
 def check_answer(answer, case_id, user_id):
   user = User.objects.get(pk=user_id)
   case = Case.objects.get(pk=case_id)
-  progress, _ = UserProgress.objects.get_or_create(user=user, case=case)
+  progress, created = UserProgress.objects.get_or_create(user=user, case=case)
 
-  if normalize_answer(answer) == normalize_answer(case.answer):
+  normalized_answer = normalize_answer(answer)
+  is_correct = normalized_answer == normalize_answer(case.answer)
+
+  if is_correct:
     if progress.status != "завершено":
       progress.status = "завершено"
-      progress.save(using="users")
-
       user.xp += case.reward_xp # type: ignore
       user.save(using="users")
+    progress.save(using="users")
     return True
   
-  progress.status = 'в процессе'
-  progress.save(using="users")
+  if progress.status != "завершено":
+    progress.status = 'в процессе'
+    progress.save(using="users")
 
   return False
 

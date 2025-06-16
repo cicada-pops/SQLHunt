@@ -534,6 +534,7 @@ function HomeContent() {
           description={expandedCase.data.description}
           rewardXp={expandedCase.data.rewardXp}
           onClose={() => handleExpandCase(false, expandedCase.data!)}
+          onNavigateToHome={() => window.location.href = '/'}
         />
       )}
     </div>
