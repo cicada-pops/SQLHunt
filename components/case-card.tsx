@@ -1036,7 +1036,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                           <thead>
                             <tr>
                               {queryResult.columns.map((column: string) => (
-                                <th key={column} className="text-left p-2 border-b border-gray-600 whitespace-nowrap">
+                                <th key={column} className="text-left p-2 border-b border-gray-600">
                                   {column}
                                 </th>
                               ))}
@@ -1046,7 +1046,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                             {queryResult.rows.map((row: any[], rowIndex: number) => (
                               <tr key={rowIndex}>
                                 {row.map((cell, cellIndex) => (
-                                  <td key={cellIndex} className="p-2 border-b border-gray-600 whitespace-nowrap">
+                                  <td key={cellIndex} className="p-2 border-b border-gray-600">
                                     {cell}
                                   </td>
                                 ))}
