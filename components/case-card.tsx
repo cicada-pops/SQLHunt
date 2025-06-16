@@ -507,50 +507,70 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
     };
   }, []);
 
-  // Функция для загрузки схемы БД
-  const fetchDbSchema = async () => {
-    handleSchemaLoading(true);
-    setSchemaError(null);
-    
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Необходима авторизация');
-      }
-
-      const response = await fetch(`https://sqlhunt.com:8000/api/cases/${number}/schema/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Не удалось загрузить схему базы данных');
-      }
-
-      if (!Array.isArray(data)) {
-        throw new Error('Некорректный формат данных схемы');
-      }
-      
-      setDbSchema(data);
-    } catch (err) {
-      console.error('Schema fetch error:', err);
-      setSchemaError(err instanceof Error ? err.message : 'Произошла неизвестная ошибка');
-    } finally {
-      handleSchemaLoading(false);
-    }
-  };
-
-  // Загружаем схему БД при переключении на соответствующую вкладку
+  // Загружаем схему БД при монтировании компонента
   useEffect(() => {
-    if (activeTab === "Схема БД" && !dbSchema && !isLoadingSchema) {
-      fetchDbSchema();
-    }
-  }, [activeTab, dbSchema, isLoadingSchema, number]);
+    const loadSchema = async () => {
+      // Проверяем кэш в localStorage
+      const cacheKey = `case_${number}_schema`;
+      const cachedSchema = localStorage.getItem(cacheKey);
+      const cacheTimestampKey = `${cacheKey}_timestamp`;
+      const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
+      
+      // Проверяем актуальность кэша (24 часа)
+      const isCacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 24 * 60 * 60 * 1000;
+      
+      if (cachedSchema && isCacheValid) {
+        try {
+          const parsedSchema = JSON.parse(cachedSchema);
+          setDbSchema(parsedSchema);
+          return;
+        } catch (e) {
+          console.error('Ошибка при разборе кэшированной схемы:', e);
+        }
+      }
+
+      handleSchemaLoading(true);
+      setSchemaError(null);
+      
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Необходима авторизация');
+        }
+
+        const response = await fetch(`https://sqlhunt.com:8000/api/cases/${number}/schema/`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Не удалось загрузить схему базы данных');
+        }
+
+        if (!Array.isArray(data)) {
+          throw new Error('Некорректный формат данных схемы');
+        }
+        
+        // Сохраняем в localStorage
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+        localStorage.setItem(cacheTimestampKey, Date.now().toString());
+        
+        setDbSchema(data);
+      } catch (err) {
+        console.error('Schema fetch error:', err);
+        setSchemaError(err instanceof Error ? err.message : 'Произошла неизвестная ошибка');
+      } finally {
+        handleSchemaLoading(false);
+      }
+    };
+
+    loadSchema();
+  }, [number]);
 
   // Функция для создания узлов и рёбер для React Flow
   const createGraphElements = useCallback((schema: any[]) => {
