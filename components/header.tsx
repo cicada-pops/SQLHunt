@@ -18,18 +18,75 @@ export const Header = memo(function Header({ onSmoothScroll, caseTitles = [] }: 
     ""
   ];
   
+  // Функция для расчета стилей заголовка на основе его длины
+  const calculateTitleStyle = (title: string) => {
+    const length = title.length;
+    const words = title.split(/\s+/).length;
+    
+    // Рассчитываем "плотность" текста (символов на слово)
+    const density = length / words;
+    
+    // Базовые значения для коротких заголовков
+    const baseFontSize = "clamp(2rem, 18vw, 18rem)";
+    const baseLetterSpacing = "5px";
+    
+    // Если заголовок короткий, используем базовые значения
+    if (length <= 18) {
+      // Для коротких заголовков с низкой плотностью и малым количеством слов увеличиваем межбуквенный интервал
+      let letterSpacing = baseLetterSpacing;
+      if (density < 10 && words <= 2) {
+        letterSpacing = "12px";
+      } else if (density < 6) {
+        letterSpacing = "8px";
+      }
+      return {
+        fontSize: baseFontSize,
+        letterSpacing
+      };
+    }
+    
+    // Для длинных заголовков рассчитываем пропорции
+    const maxLength = 50; // Максимальная ожидаемая длина заголовка
+    const minFontSize = 2; // Минимальный размер в rem
+    const maxFontSize = 16; // Максимальный размер в rem
+    const minLetterSpacing = 1.5; // Минимальный межбуквенный интервал
+    let maxLetterSpacing = 5; // Максимальный межбуквенный интервал
+    
+    // Увеличиваем максимальный интервал для заголовков с низкой плотностью
+    if (density < 6) {
+      maxLetterSpacing = words <= 2 ? 12 : 8;
+    }
+    
+    // Нормализуем длину от 0 до 1
+    const normalizedLength = Math.min((length - 18) / (maxLength - 18), 1);
+    
+    // Рассчитываем размер шрифта
+    const fontSize = maxFontSize - (normalizedLength * (maxFontSize - minFontSize));
+    
+    // Рассчитываем межбуквенный интервал с учетом плотности
+    const letterSpacing = maxLetterSpacing - (normalizedLength * (maxLetterSpacing - minLetterSpacing));
+    
+    return {
+      fontSize: `clamp(${minFontSize}rem, ${fontSize}vw, ${fontSize}rem)`,
+      letterSpacing: `${letterSpacing}px`
+    };
+  };
+
   // Функция для определения стиля на основе полного заголовка
   const getTitleStyle = (currentTitleIndex: number) => {
     const fullTitle = titles[currentTitleIndex];
+    const { fontSize, letterSpacing } = calculateTitleStyle(fullTitle);
+    
     return {
       fontFamily: "var(--font-heathergreen)",
-      fontSize: fullTitle.length > 25 ? "clamp(1.4rem, 13vw, 13rem)" : "clamp(2rem, 18vw, 18rem)",
+      fontSize,
       width: "100%",
-      letterSpacing: fullTitle.length > 25 ? "2px" : "5px",
+      letterSpacing,
       textShadow: "none",
       whiteSpace: "nowrap",
       overflow: "hidden",
-      maxWidth: "110vw"
+      maxWidth: "110vw",
+      lineHeight: fullTitle.length > 18 ? "1.2" : "1"
     };
   };
   

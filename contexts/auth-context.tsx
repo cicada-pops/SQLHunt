@@ -18,6 +18,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUserData: () => Promise<void>;
 }
 
 // Создаем контекст с начальным значением
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => false,
   register: async () => {},
   logout: () => {},
+  refreshUserData: async () => {},
 });
 
 // Хук для использования контекста авторизации
@@ -112,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           registrationDate: new Date().toISOString()
         });
         setIsAuthenticated(true);
+        window.location.href = '/';
         return true;
       }
       return false;
@@ -131,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setIsAuthenticated(true);
     await updateUserData();
+    window.location.href = '/';
   };
 
   // Функция для выхода
@@ -138,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authService.logout();
     setUser(null);
     setIsAuthenticated(false);
+    window.location.href = '/';
   };
 
   return (
@@ -147,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      refreshUserData: updateUserData,
     }}>
       {children}
     </AuthContext.Provider>

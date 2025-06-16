@@ -45,12 +45,12 @@ if (typeof document !== 'undefined') {
   document.head.appendChild(styleSheet);
 }
 
-export default function Home() {
+function HomeContent() {
   // Получаем параметры из URL
   const searchParams = useSearchParams();
   const caseId = searchParams.get('case');
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refreshUserData } = useAuth();
 
   // Ref для отслеживания первого рендера
   const isFirstRender = useRef(true);
@@ -159,53 +159,61 @@ export default function Home() {
       setFetchError(null);
       
       try {
-        const token = localStorage.getItem('token');
-        console.log('Пробуем загрузить с токеном:', token);
-        
-        const response = await fetch('https://sqlhunt.com:8000/api/cases/', {
-          method: 'GET',
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          mode: 'cors',
-        });
-        
-        console.log('Ответ от сервера:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`Ошибка загрузки дел: ${response.status}`);
+        // Обновляем данные пользователя перед загрузкой дел
+        if (isAuthenticated) {
+          await refreshUserData();
+          
+          const token = localStorage.getItem('token');
+          console.log('Пробуем загрузить с токеном:', token);
+          
+          const response = await fetch('https://sqlhunt.com:8000/api/cases/', {
+            method: 'GET',
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            mode: 'cors',
+          });
+          
+          console.log('Ответ от сервера:', response.status);
+          
+          if (!response.ok) {
+            throw new Error(`Ошибка загрузки дел: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log('Получены дела:', data);
+          
+          const cases = data.map((item: any) => ({
+            number: String(item.id),
+            title: item.title,
+            description: item.description,
+            requiredExp: item.required_xp,
+            rewardXp: item.reward_xp,
+          }));
+          
+          setCasesList(cases);
+          // Обновляем список заголовков
+          setCaseTitles(cases.map((c: CaseData) => c.title.toUpperCase()));
+        } else {
+          // Для неавторизованных пользователей устанавливаем только заголовки для анимации
+          setCaseTitles([
+            "СЕРЕБРЯНЫЙ КЛЮЧ",
+            "ПОСЛЕДНЯЯ ВСТРЕЧА",
+            "АРХИВНЫЕ ЗАКОНОМЕРНОСТИ",
+            "ТАЙНА ПРОПАВШИХ ДАННЫХ",
+            "ЦИФРОВОЙ СЛЕД",
+          ]);
+          setCasesList([]);
         }
-        
-        const data = await response.json();
-        console.log('Получены дела:', data);
-        
-        const cases = data.map((item: any) => ({
-          number: String(item.id),
-          title: item.title,
-          description: item.description,
-          requiredExp: item.required_xp,
-          rewardXp: item.reward_xp,
-        }));
-        
-        setCasesList(cases);
-        // Обновляем список заголовков
-        setCaseTitles(cases.map((c: CaseData) => c.title.toUpperCase()));
       } catch (e: any) {
         console.error('Ошибка при загрузке дел:', e);
         setFetchError(e.message || 'Ошибка загрузки');
       }
     };
 
-    // Пробуем загрузить в любом случае, если есть токен
-    const token = localStorage.getItem('token');
-    if (token) {
-      console.log('Есть токен, пробуем загрузить дела');
-      fetchCases();
-    } else {
-      console.log('Нет токена для загрузки дел');
-    }
+    fetchCases();
   }, [isAuthenticated]); // Зависимость от isAuthenticated остаётся
 
   // Обработчик успешной авторизации
@@ -420,67 +428,81 @@ export default function Home() {
       }}
     >
       {/* Вторая часть страницы */}
-      <div id="second-page" className="min-h-screen font-serif text-black p-4 md:p-8 pt-20">
-        <div className="max-w-5xl mx-auto">
-          {/* Header with filter button */}
-          <div className="flex justify-between items-center mb-6">
-            <h2 
-              className="text-5xl font-normal opacity-0" 
-              style={{ 
-                fontFamily: "var(--font-heathergreen)",
-                letterSpacing: "0.08em",
-                animation: 'fadeIn 0.6s ease-out 0.2s forwards'
-              }}
-            >
-              Дела:
-            </h2>
-          </div>
-
-          {/* Cards container */}
-          <div className="min-h-[200px] transition-opacity duration-300 ease-in-out">
-            {fetchError ? (
-              <div className="flex items-center justify-center min-h-[200px] transition-opacity duration-300">
-                <div className="text-xl text-red-500">{fetchError}</div>
-              </div>
-            ) : (
-              <div 
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn"
-                style={{
-                  animation: 'fadeIn 0.4s ease-in-out'
+      {isAuthenticated && (
+        <div id="second-page" className="min-h-screen font-serif text-black p-4 md:p-8 pt-20">
+          <div className="max-w-5xl mx-auto">
+            {/* Header with filter button */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 
+                className="text-5xl font-normal opacity-0" 
+                style={{ 
+                  fontFamily: "var(--font-heathergreen)",
+                  letterSpacing: "0.08em",
+                  animation: 'fadeIn 0.6s ease-out 0.2s forwards'
                 }}
               >
-                {casesList.map((caseItem) => (
-                  <div 
-                    key={caseItem.number} 
-                    className="w-full opacity-0 animate-slideUp"
-                    style={{
-                      animation: 'slideUp 0.4s ease-out forwards',
-                      animationDelay: `${parseInt(caseItem.number) * 0.1}s`
-                    }}
-                  >
-                    <CaseCard
-                      key={caseItem.number}
-                      number={caseItem.number}
-                      title={caseItem.title}
-                      description={caseItem.description}
-                      isMarked={false}
-                      requiredExp={caseItem.requiredExp}
-                      rewardXp={caseItem.rewardXp}
-                      userExp={user?.experience || 0}
-                      onExpandCase={handleExpandCase}
-                    />
-                  </div>
-                ))}
-                {casesList.length === 0 && (
-                  <div className="col-span-full text-center py-10 animate-fadeIn">
-                    <p className="text-xl">Нет доступных дел</p>
-                  </div>
-                )}
-              </div>
-            )}
+                Дела:
+              </h2>
+            </div>
+
+            {/* Cards container */}
+            <div className="min-h-[200px] transition-opacity duration-300 ease-in-out">
+              {fetchError ? (
+                <div className="flex items-center justify-center min-h-[200px] transition-opacity duration-300">
+                  <div className="text-xl text-red-500">{fetchError}</div>
+                </div>
+              ) : (
+                <div 
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn"
+                  style={{
+                    animation: 'fadeIn 0.4s ease-in-out'
+                  }}
+                >
+                  {casesList.map((caseItem) => (
+                    <div 
+                      key={caseItem.number} 
+                      className="w-full opacity-0 animate-slideUp"
+                      style={{
+                        animation: 'slideUp 0.4s ease-out forwards',
+                        animationDelay: `${parseInt(caseItem.number) * 0.1}s`
+                      }}
+                    >
+                      <CaseCard
+                        key={caseItem.number}
+                        number={caseItem.number}
+                        title={caseItem.title}
+                        description={caseItem.description}
+                        isMarked={false}
+                        requiredExp={caseItem.requiredExp}
+                        rewardXp={caseItem.rewardXp}
+                        userExp={user?.experience || 0}
+                        onExpandCase={handleExpandCase}
+                      />
+                    </div>
+                  ))}
+                  {casesList.length === 0 && (
+                    <div className="col-span-full text-center py-10 animate-fadeIn">
+                      <p className="text-xl">Нет доступных дел</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+      {!isAuthenticated && (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-3xl mb-4" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
+              Войдите, чтобы начать расследование
+            </h2>
+            <p className="text-xl" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+              Доступ к делам открыт только для авторизованных детективов
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -505,33 +527,39 @@ export default function Home() {
   );
   
   return (
+    <main className="min-h-screen flex flex-col p-10 relative">
+      {/* Хедер (всегда видимый) */}
+      <Header 
+        onSmoothScroll={handleSmoothScroll}
+        caseTitles={caseTitles}
+      />
+
+      {/* Модальное окно авторизации */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => {
+          setIsAuthModalOpen(false);
+        }}
+        onAuthSuccess={handleAuthSuccess}
+      />
+
+      {/* Содержимое развернутой карточки или основной контент - отображаем только на клиенте */}
+      {isLoading ? (
+        <div className="w-full min-h-[80vh] flex items-center justify-center">
+          <Loader />
+        </div>
+      ) : isClient ? (
+        expandedCase.isExpanded && isAuthenticated ? renderExpandedCase() : renderMainContent()
+      ) : null}
+    </main>
+  );
+}
+
+export default function Home() {
+  return (
     <AuthProvider>
-      <main className="min-h-screen flex flex-col p-10 relative">
-        {/* Хедер (всегда видимый) */}
-        <Header 
-          onSmoothScroll={handleSmoothScroll}
-          caseTitles={caseTitles}
-        />
-
-        {/* Модальное окно авторизации */}
-        <AuthModal 
-          isOpen={isAuthModalOpen} 
-          onClose={() => {
-            setIsAuthModalOpen(false);
-          }}
-          onAuthSuccess={handleAuthSuccess}
-        />
-
-        {/* Содержимое развернутой карточки или основной контент - отображаем только на клиенте */}
-        {isLoading ? (
-          <div className="w-full min-h-[80vh] flex items-center justify-center">
-            <Loader />
-          </div>
-        ) : isClient ? (
-          expandedCase.isExpanded ? renderExpandedCase() : renderMainContent()
-        ) : null}
-      </main>
+      <HomeContent />
     </AuthProvider>
-  )
+  );
 }
 

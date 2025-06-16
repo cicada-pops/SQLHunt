@@ -119,9 +119,10 @@ const translateError = (error: string): string => {
 const authService = {
   async login(data: LoginData): Promise<AuthResponse> {
     try {
-      await getCSRFToken(); // Получаем CSRF токен перед запросом
-      console.log('Sending login request to:', `${API_URL}/login/`);
-      const response = await axios.post(`${API_URL}/login/`, data, {
+      await getCSRFToken();
+      const url = `${API_URL}/login/`;
+      console.log('Sending login request to:', url);
+      const response = await axios.post(url, data, {
         headers: {
           'Content-Type': 'application/json',
         }
@@ -133,10 +134,10 @@ const authService = {
         localStorage.setItem('refreshToken', authResponse.token.refresh);
         localStorage.setItem('user', JSON.stringify(authResponse.user));
       }
+      window.location.href = '/';
       return authResponse;
     } catch (error: any) {
-      // Не логируем ошибки 401 (неверные учетные данные)
-      if (error.response && error.response.status !== 401) {
+      if (error.response && ![400, 401].includes(error.response.status)) {
         console.error('Login error:', error);
       }
       
@@ -170,6 +171,7 @@ const authService = {
         localStorage.setItem('refreshToken', authResponse.token.refresh);
         localStorage.setItem('user', JSON.stringify(authResponse.user));
       }
+      window.location.href = '/';
       return authResponse;
     } catch (error: any) {
       // Не логируем ошибки 400 (ошибки валидации) и 409 (конфликты)

@@ -17,6 +17,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 import { useAuth } from "../contexts/auth-context"
 import Loader from "./bounce-loader"
+import authService from "../services/auth"
 
 // Определяем типы для колонки
 interface Column {
@@ -147,6 +148,16 @@ export const CaseCard = memo(function CaseCard({
   // Проверяем, доступно ли дело
   const isLocked = userExp < requiredExp;
   
+  // Добавляем эффект для логирования состояния блокировки
+  useEffect(() => {
+    console.log(`Case ${number} lock status:`, {
+      userExp,
+      requiredExp,
+      isLocked,
+      title
+    });
+  }, [userExp, requiredExp, isLocked, number, title]);
+
   // Проверяем, что мы на клиенте
   useEffect(() => {
     setIsClient(true);
@@ -157,6 +168,11 @@ export const CaseCard = memo(function CaseCard({
     
     // Если дело заблокировано, не открываем его
     if (isLocked) {
+      console.log(`Cannot open case ${number}:`, {
+        userExp,
+        requiredExp,
+        isLocked
+      });
       return;
     }
     
@@ -385,7 +401,17 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   const [showLoader, setShowLoader] = useState(false);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, refreshUserData } = useAuth();
+  
+  // Добавляем состояния для ответов
+  const [answer, setAnswer] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  
+  // Добавляем состояние для заметок
+  const [notes, setNotes] = useState("");
+  const notesRef = useRef<HTMLTextAreaElement>(null);
   
   // Добавляем состояние для схемы БД
   const [dbSchema, setDbSchema] = useState<Array<{
@@ -407,6 +433,25 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
   const resultContentRef = useRef<HTMLDivElement>(null);
+
+  // Загружаем заметки при монтировании компонента
+  useEffect(() => {
+    if (user?.id) {
+      const savedNotes = localStorage.getItem(`case_${number}_notes_user_${user.id}`);
+      if (savedNotes) {
+        setNotes(savedNotes);
+      }
+    }
+  }, [number, user?.id]);
+
+  // Сохраняем заметки при их изменении
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newNotes = e.target.value;
+    setNotes(newNotes);
+    if (user?.id) {
+      localStorage.setItem(`case_${number}_notes_user_${user.id}`, newNotes);
+    }
+  };
 
   // Функция для управления состоянием загрузки с минимальной задержкой
   const handleLoading = useCallback((loading: boolean) => {
@@ -761,6 +806,55 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
     }
   };
 
+  // Обновляем функцию для отправки ответа
+  const handleSubmitAnswer = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(false);
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Необходима авторизация');
+      }
+
+      const response = await fetch(`https://sqlhunt.com:8000/api/cases/${number}/submit-answer/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ answer })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Ошибка при отправке ответа');
+      }
+
+      if (data.correct) {
+        setSubmitSuccess(true);
+        
+        // Обновляем данные пользователя с сервера
+        await refreshUserData();
+        
+        // Перенаправляем на главную страницу через 2 секунды
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } else {
+        throw new Error('Ответ неверен');
+      }
+    } catch (err) {
+      console.error('Submit answer error:', err);
+      setSubmitError(err instanceof Error ? err.message : 'Произошла неизвестная ошибка');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div 
       ref={contentRef}
@@ -1060,7 +1154,90 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
           </div>
         )}
 
-        {/* ... other tabs content ... */}
+        {activeTab === "Заметки" && (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col" style={{ height: '500px' }}>
+              {/* Шапка окна заметок */}
+              <div className="flex justify-between items-center pr-1" style={{ backgroundColor: 'rgba(255, 168, 16, 0.4)' }}>
+                <div className="p-2 font-bold text-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                  Заметки к делу
+                </div>
+              </div>
+              {/* Поле для ввода заметок */}
+              <textarea
+                ref={notesRef}
+                className="flex-1 p-4 resize-none border-0 outline-none text-sm"
+                style={{ 
+                  backgroundColor: '#241C13', 
+                  color: '#FFFFFF', 
+                  fontFamily: "var(--font-rationalist-light)",
+                  minHeight: '400px'
+                }}
+                placeholder="Введите ваши заметки к делу..."
+                value={notes}
+                onChange={handleNotesChange}
+              ></textarea>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "Ответы" && (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col">
+              {/* Шапка окна ответов */}
+              <div className="flex justify-between items-center pr-1" style={{ backgroundColor: 'rgba(255, 168, 16, 0.4)' }}>
+                <div className="p-2 font-bold text-black" style={{ fontFamily: "var(--font-rationalist-light)" }}>
+                  Ответ на дело
+                </div>
+              </div>
+              
+              {/* Форма ответа */}
+              <div className="p-4 bg-[#241C13] text-white">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="block font-bold" style={{ fontFamily: "var(--font-rationalist-bold)" }}>
+                      Введите ваш ответ:
+                    </label>
+                    <input
+                      type="text"
+                      value={answer}
+                      onChange={(e) => setAnswer(e.target.value)}
+                      className="w-full p-2 bg-[#1a1a1a] border border-[#FF8A00] rounded"
+                      placeholder="ответ..."
+                    />
+                  </div>
+
+                  {/* Сообщения об ошибке или успехе */}
+                  {submitError && (
+                    <div className="text-red-500 p-2 border border-red-500 rounded">
+                      {submitError}
+                    </div>
+                  )}
+                  
+                  {submitSuccess && (
+                    <div className="text-green-500 p-2 border border-green-500 rounded">
+                      Ответ верен! Перенаправление на главную страницу...
+                    </div>
+                  )}
+
+                  {/* Кнопка отправки */}
+                  <button
+                    onClick={handleSubmitAnswer}
+                    disabled={isSubmitting || submitSuccess}
+                    className={`w-full py-2 px-4 rounded font-bold ${
+                      isSubmitting || submitSuccess
+                        ? 'bg-gray-500 cursor-not-allowed'
+                        : 'bg-[#FF8A00] hover:bg-[#FF9A20]'
+                    }`}
+                    style={{ fontFamily: "var(--font-rationalist-bold)" }}
+                  >
+                    {isSubmitting ? 'Отправка...' : submitSuccess ? 'Успешно!' : 'Отправить ответ'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
