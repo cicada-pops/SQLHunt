@@ -932,6 +932,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                     style={{ backgroundColor: 'rgba(255, 168, 16, 0.6)', fontFamily: "var(--font-rationalist-light)" }}
                     onClick={executeQuery}
                     disabled={isLoading}
+                    title={`Выполнить SQL запрос (${navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'} + Enter)`}
                   >
                     <Play className="w-3 h-3 stroke-[2]" />
                     {isLoading ? 'Выполняется...' : 'Выполнить'}
@@ -945,6 +946,12 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                   spellCheck="false"
                   value={sqlQuery}
                   onChange={handleQueryChange}
+                  onKeyDown={(e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isLoading) {
+                      e.preventDefault();
+                      executeQuery();
+                    }
+                  }}
                 ></textarea>
               </div>
 
@@ -1027,28 +1034,30 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                     </div>
                   ) : queryResult ? (
                     <div className="text-white">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr>
-                            {queryResult.columns.map((column: string) => (
-                              <th key={column} className="text-left p-2 border-b border-gray-600">
-                                {column}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {queryResult.rows.map((row: any[], rowIndex: number) => (
-                            <tr key={rowIndex}>
-                              {row.map((cell, cellIndex) => (
-                                <td key={cellIndex} className="p-2 border-b border-gray-600">
-                                  {cell}
-                                </td>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr>
+                              {queryResult.columns.map((column: string) => (
+                                <th key={column} className="text-left p-2 border-b border-gray-600 whitespace-nowrap">
+                                  {column}
+                                </th>
                               ))}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {queryResult.rows.map((row: any[], rowIndex: number) => (
+                              <tr key={rowIndex}>
+                                {row.map((cell, cellIndex) => (
+                                  <td key={cellIndex} className="p-2 border-b border-gray-600 whitespace-nowrap">
+                                    {cell}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-gray-400 italic" style={{ fontFamily: "var(--font-rationalist-light)" }}>
@@ -1204,6 +1213,22 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                       onChange={(e) => setAnswer(e.target.value)}
                       className="w-full p-2 bg-[#1a1a1a] border border-[#FF8A00] rounded"
                       placeholder="ответ..."
+                      onKeyDown={(e) => {
+                        // Проверяем Ctrl/Cmd + Enter
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                          e.preventDefault();
+                          if (!isSubmitting && !submitSuccess) {
+                            handleSubmitAnswer();
+                          }
+                        }
+                        // Проверяем просто Enter
+                        else if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (!isSubmitting && !submitSuccess) {
+                            handleSubmitAnswer();
+                          }
+                        }
+                      }}
                     />
                   </div>
 
@@ -1230,6 +1255,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
                         : 'bg-[#FF8A00] hover:bg-[#FF9A20]'
                     }`}
                     style={{ fontFamily: "var(--font-rationalist-bold)" }}
+                    title={`Отправить ответ (${navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter или Enter)`}
                   >
                     {isSubmitting ? 'Отправка...' : submitSuccess ? 'Успешно!' : 'Отправить ответ'}
                   </button>

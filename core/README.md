@@ -85,37 +85,29 @@
    python3 manage.py migrate --database=auth
    python3 manage.py migrate users --database=users
    python3 manage.py migrate investigations --database=investigations
-   python3 manage.py migrate --database=celery
+   python3 manage.py migrate django_celery_results --database=celery
    ```
-
    Примечание: Так как база данных default пуста, то при каждом запуске migrate необходимо вручную указывать имя базы данных.
-
 5. Сгенерируйте данные и загрузите дела
 
    ```
    python3 manage.py generate_investigations
    python3 manage.py load_cases
    ```
-
    Примечание: для очистки данных используйте параметр --clear
-   
 6. Создайте суперпользователя:
 
    ```bash
    python3 manage.py createsuperuser --database=auth
    ```
-
 7. Запустите celery:
+
    ```
    celery -A celery_app worker --loglevel=info
    ```
-
 8. Запустите сервер разработки:
 
    ```bash
    python3 manage.py runserver_plus sqlhunt.com:8000 --cert-file cert.crt
-
-   PYTHONPATH=$PYTHONPATH:$PWD/core celery -A core worker -l INFO
    ```
-
    Примечание: Мы указали команде runserver_plus имя файла SSL/TLS-сертификата. Django Extensions автоматически сгенерирует ключ и сертификат. Пройдите по URL-адресу [https://sqlhunt.com:8000/](https://sqlhunt.com:8000/)
