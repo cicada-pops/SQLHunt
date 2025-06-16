@@ -200,8 +200,25 @@ function HomeContent() {
           
           const progressData = await progressResponse.json();
           
-          // Создаем Set с ID завершенных дел для быстрого поиска
-          const completedCases = new Set(progressData.map((progress: any) => progress.case_id));
+          // Добавляем детальное отладочное логирование
+          console.log('Прогресс пользователя (детально):', JSON.stringify(progressData, null, 2));
+          console.log('Пример первой записи:', progressData[0]);
+          console.log('Доступные поля в записи:', progressData[0] ? Object.keys(progressData[0]) : 'Нет данных');
+          
+          // Создаем Set с ID завершенных дел (проверяем оба варианта статуса)
+          const completedCases = new Set(
+            progressData
+              .filter((progress: any) => 
+                progress.status === 'Завершено' || 
+                progress.status === 'завершено' ||
+                progress.state === 'Завершено' ||
+                progress.state === 'завершено'
+              )
+              .map((progress: any) => progress.case_id)
+          );
+          
+          // Логируем завершенные дела
+          console.log('Завершенные дела:', Array.from(completedCases));
           
           // Маппим дела с учетом прогресса
           const cases = casesData.map((item: any) => ({
@@ -210,7 +227,7 @@ function HomeContent() {
             description: item.description,
             requiredExp: item.required_xp,
             rewardXp: item.reward_xp,
-            isMarked: completedCases.has(item.id) // Помечаем завершенные дела
+            isMarked: completedCases.has(item.id) // Помечаем только завершенные дела
           }));
           
           console.log('Получены дела с прогрессом:', cases);

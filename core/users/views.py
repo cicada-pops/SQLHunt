@@ -20,8 +20,8 @@ def get_user_progress(request):
         progress = UserProgress.objects.filter(user_id=request.user.id)
         logger.info(f"Получен прогресс: {progress.count()} записей")
         
-        # Преобразуем в список
-        result = list(progress.values('case_id'))
+        # Преобразуем в список, добавляя поле status
+        result = list(progress.values('case_id', 'status'))
         logger.info(f"Подготовлен ответ: {result}")
         
         return Response(result)
