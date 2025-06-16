@@ -25,8 +25,8 @@ from .base_case import BaseCase
 class FinalMeeting(BaseCase):
     title = "Последняя встреча"
     short_description = "Ссора в кафе, убийство через два дня, свидетель с описанием. Кто был на той встрече?"
-    required_xp = 0
-    reward_xp = 150
+    required_xp = 100
+    reward_xp = 100
     answer = 451  
     available_tables = [
         "cases", "person", "suspect", "alibi", "statement", "suspect_cases", "charge", "article"

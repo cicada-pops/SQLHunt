@@ -19,6 +19,10 @@ def check_answer(answer, case_id, user_id):
       user.xp += case.reward_xp # type: ignore
       user.save(using="users")
     return True
+  
+  progress.status = 'в процессе'
+  progress.save(using="users")
+
   return False
 
 

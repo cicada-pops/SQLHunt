@@ -144,17 +144,9 @@ def get_sample_suspects(n, available_ids):
   return random.sample(available_ids, min(n, len(available_ids)))
 
 def get_suspect_count():
-    roll = random.random()
-    if roll < 0.20:
-        return 0
-    elif roll < 0.45:
-        return 1
-    elif roll < 0.75:
-        return 2
-    elif roll < 0.95:
-        return random.randint(3, 4)
-    else:
-        return 5
+    weights = [0.15, 0.20, 0.20, 0.20, 0.15, 0.10]
+    choices = [0, 1, 2, 3, 4, 5]
+    return random.choices(choices, weights=weights, k=1)[0]
 
 def get_articles(case_type):
    return CRIME_TYPE_TO_ARTICLES.get(case_type, [])
