@@ -15,12 +15,10 @@ def get_user_progress(request):
     """
     try:
         logger.info(f"Получен запрос от пользователя ID: {request.user.id}")
-        
-        # Получаем прогресс пользователя напрямую по ID
+      
         progress = UserProgress.objects.filter(user_id=request.user.id)
         logger.info(f"Получен прогресс: {progress.count()} записей")
         
-        # Преобразуем в список, добавляя поле status
         result = list(progress.values('case_id', 'status'))
         logger.info(f"Подготовлен ответ: {result}")
         

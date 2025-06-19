@@ -2,7 +2,6 @@ from celery.result import AsyncResult
 from celery_app import app
 from django.core.exceptions import ObjectDoesNotExist
 from investigations.decorators import validate_case_access
-from investigations.models import Alibi, Case, CrimeScene, Evidence, Suspect
 from investigations.tasks import execute_safe_sql
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -84,58 +83,6 @@ class SubmitAnswerView(APIView):
         answer = request.data.get("answer", "")
         success = check_answer(answer=answer, user_id=request.user.id, case_id=request.case.id)
         return Response({"correct": success})
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_case_details(request, case_id):
-    try:
-        case = Case.objects.using('investigations').get(id=case_id)
-        suspects = Suspect.objects.using('investigations').filter(cases=case).select_related('person')
-        crime_scenes = CrimeScene.objects.using('investigations').filter(case=case)
-        evidence = Evidence.objects.using('investigations').filter(scene__case=case)
-        alibis = Alibi.objects.using('investigations').filter(case=case).select_related('suspect', 'suspect__person')
-
-        case_data = {
-            'id': case.id,
-            'description': case.description,
-            'type': case.type,
-            'status': case.status,
-            'date_opened': case.date_opened,
-            'date_closed': case.date_closed,
-            'suspects': [{
-                'id': suspect.id,
-                'status': suspect.status,
-                'person': {
-                    'name': suspect.person.name,
-                    'description': suspect.person.description,
-                }
-            } for suspect in suspects],
-            'crime_scenes': [{
-                'id': scene.id,
-                'location': scene.location,
-                'date': scene.date,
-                'evidence': [{
-                    'id': e.id,
-                    'type': e.type,
-                    'description': e.description,
-                    'date': e.date
-                } for e in evidence if e.scene_id == scene.id]
-            } for scene in crime_scenes],
-            'alibis': [{
-                'id': alibi.id,
-                'status': alibi.status,
-                'description': alibi.description,
-                'suspect': {
-                    'name': alibi.suspect.person.name,
-                    'status': alibi.suspect.status
-                }
-            } for alibi in alibis]
-        }
-        
-        return Response(case_data)
-    except Case.DoesNotExist:
-        return Response({'error': 'Case not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(['GET'])

@@ -1,9 +1,12 @@
+import logging
+
 from django.contrib.auth.models import User as AuthUser
 from django.db import IntegrityError, transaction
-from django.db.models.signals import post_delete, post_save
+from django.db.models.signals import post_delete, post_save, pre_delete, pre_save
 from django.dispatch import receiver
 from users.models import Case, User, UserProgress
 
+logger = logging.getLogger(__name__)
 
 @receiver(post_save, sender=Case)
 def create_userprogress_for_all_users(sender, instance, created, **kwargs):
@@ -21,8 +24,7 @@ def create_userprogress_for_all_users(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def create_userprogress_for_new_user(sender, instance, created, **kwargs):
     if created:
-        available_cases = Case.objects.using('users').filter(required_xp__lte=instance.xp)
-        for case in available_cases:
+        for case in Case.objects.using('users').all():
             try:
                 with transaction.atomic(using='users'):
                     UserProgress.objects.using('users').get_or_create(
@@ -52,3 +54,29 @@ def delete_user_on_profile_deletion(sender, instance, **kwargs):
             
     except IntegrityError as e:
         raise IntegrityError(f"Error while deleting user data: {str(e)}")
+
+
+@receiver(pre_save, sender=UserProgress)
+def grant_xp_on_status_completed(sender, instance, **kwargs):
+    if instance.pk:  
+        try:
+            old_instance = sender.objects.get(pk=instance.pk)
+            if old_instance.status != 'завершено' and instance.status == 'завершено':
+                user = instance.user
+                user.xp += instance.case.reward_xp
+                user.save(update_fields=['xp'])
+        except Exception as e:
+            logger.error(f"Error granting XP on UserProgress save (UserProgress id={instance.pk}): {e}", exc_info=True)
+
+@receiver(pre_delete, sender=Case)
+def deduct_xp_on_case_deletion(sender, instance, **kwargs):
+    try:
+        completed_progresses = UserProgress.objects.using('users').filter(case=instance, status='завершено')
+
+        with transaction.atomic(using='users'):
+            for progress in completed_progresses.select_related('user'):
+                user = progress.user
+                user.xp = max(user.xp - instance.reward_xp, 0)  
+                user.save(update_fields=['xp'])
+    except Exception as e:
+        logger.error(f"Error deducting XP on Case deletion (Case id={instance.id}): {e}", exc_info=True)

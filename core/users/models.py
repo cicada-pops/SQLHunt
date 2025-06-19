@@ -35,6 +35,9 @@ class Case(models.Model):
         return f"{self.pk} - {self.title}"
     
     class Meta:
+        indexes = [
+            models.Index(fields=['title']),
+        ]
         managed = True
         app_label = 'users'
 
@@ -44,6 +47,9 @@ class AvailableTable(models.Model):
     table = models.CharField(max_length=50)
 
     class Meta:
+        indexes = [
+            models.Index(fields=['case']), 
+        ]
         app_label = 'users'
         unique_together = ('case', 'table')
         managed = True
@@ -64,6 +70,11 @@ class UserProgress(TimeStampedModel):
     status = models.CharField(max_length=20, choices=CASE_STATUS, default='не начато')
 
     class Meta: # type: ignore
+        indexes = [
+            models.Index(fields=['case', 'status']),  
+            models.Index(fields=['case', 'user']),    
+            models.Index(fields=['user']),        
+        ]
         app_label = 'users'
         unique_together = ('user', 'case')
         managed = True
