@@ -491,16 +491,9 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
     if (loading) {
       setShowLoader(true);
       setIsLoading(true);
-      // Устанавливаем минимальное время отображения лоадера
-      loadingTimerRef.current = setTimeout(() => {
-        setShowLoader(false);
-      }, 2000);
     } else {
       setIsLoading(false);
-      // Если прошло меньше 2 секунд, лоадер останется до истечения таймера
-      if (!loadingTimerRef.current) {
-        setShowLoader(false);
-      }
+      setShowLoader(false);
     }
   }, []);
 
@@ -518,16 +511,9 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
     if (loading) {
       setShowSchemaLoader(true);
       setIsLoadingSchema(true);
-      // Устанавливаем минимальное время отображения лоадера
-      schemaLoadingTimerRef.current = setTimeout(() => {
-        setShowSchemaLoader(false);
-      }, 3000);
     } else {
       setIsLoadingSchema(false);
-      // Если прошло меньше 3 секунд, лоадер останется до истечения таймера
-      if (!schemaLoadingTimerRef.current) {
-        setShowSchemaLoader(false);
-      }
+      setShowSchemaLoader(false);
     }
   }, []);
 

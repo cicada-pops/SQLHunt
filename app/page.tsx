@@ -213,11 +213,7 @@ function HomeContent() {
   }, []);
 
   useEffect(() => {
-    // Устанавливаем минимальное время отображения лоадера
-    loadingTimerRef.current = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000);
-
+    setIsLoading(false);
     return () => {
       if (loadingTimerRef.current) {
         clearTimeout(loadingTimerRef.current);
@@ -493,11 +489,6 @@ function HomeContent() {
                     />
                   </div>
                 ))}
-                {casesList.length === 0 && (
-                  <div className="col-span-full text-center py-10 animate-fadeIn">
-                    <p className="text-xl">Нет доступных дел</p>
-                  </div>
-                )}
               </div>
             )}
           </div>
