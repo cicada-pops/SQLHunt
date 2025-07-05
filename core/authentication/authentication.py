@@ -19,8 +19,5 @@ class EmailAuthBackend:
             return None
     
 def create_users_user(backend, user, *args, **kwargs):
-    if user is None:
-        print("User is None, skipping UsersUser creation")
-        return
-    print(f"Creating UsersUser with id={user.pk}")
-    UsersUser.objects.using('users').get_or_create(id=user.pk)
+    if user:
+        UsersUser.objects.using('users').get_or_create(id=user.pk)

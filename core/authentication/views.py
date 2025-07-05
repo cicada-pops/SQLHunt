@@ -4,13 +4,10 @@ from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 from django.conf import settings
-from django.contrib import messages
-from django.contrib.auth import authenticate, get_user_model, login
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.tokens import default_token_generator
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.http import JsonResponse
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.utils.translation import gettext as _
@@ -22,9 +19,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from users.models import User as UserXP
+from users.models import User as User
 
-from .forms import LoginForm, UserEditForm, UserRegistrationForm
 from .serializers import (
     PasswordResetSerializer,
     UserRegistrationSerializer,
@@ -56,7 +52,7 @@ def register_user(request):
     serializer = UserRegistrationSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
-        refresh = RefreshToken.for_user(user)
+        refresh = RefreshToken.for_user(user) # type: ignore
         return Response({
             'user': {
                 'id': user.id,
@@ -105,58 +101,6 @@ def api_logout(request):
         logger.error(f"Error during logout: {str(e)}")
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
-def user_login(request):
-    if request.method == 'POST':
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            cd = form.cleaned_data
-            user = authenticate(username=cd['username'], password=cd['password'])
-            if user is not None:
-                if user.is_active:
-                    login(request, user)
-                    return HttpResponse('Authenticated successfully')
-                else:
-                     return HttpResponse('Disabled account')
-            else:
-                return HttpResponse('Invalid login')
-    else:
-        form = LoginForm()
-    return render(request, 'authentication/login.html', {'form': form})
-            
-@login_required
-def dashboard(request):
-    return render(request, 'authentication/dashboard.html', {'section': 'dashboard'})
-
-def register(request):
-    if request.method == 'POST':
-        user_form = UserRegistrationForm(request.POST)
-        if user_form.is_valid():
-            new_user = user_form.save(commit=False)
-            new_user.set_password(user_form.cleaned_data['password'])
-            new_user.save()
-            UserXP.objects.create(id=new_user.pk)
-            return render(request, 'authentication/register_done.html', {'new_user': new_user})
-    else:
-        user_form = UserRegistrationForm()
-    return render(request, 'authentication/register.html', {'user_form': user_form})
-
-
-@login_required
-def edit(request):
-    if request.method == 'POST':
-        user_form = UserEditForm(instance=request.user, 
-                                 data=request.POST)
-        if user_form.is_valid():
-            user_form.save()
-            messages.success(request, 'User updated successfully')
-        else:
-            messages.error(request, 'Error updating User')
-    else:
-        user_form = UserEditForm(instance=request.user)
-        
-    return render(request,
-                    'authentication/edit.html',
-                    {'user_form': user_form})
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -165,14 +109,14 @@ def get_user_data(request):
     Get current user data including experience
     """
     try:
-        user_xp = UserXP.objects.get(id=request.user.id)
+        user_xp = User.objects.get(id=request.user.id)
         return Response({
             'id': request.user.id,
             'username': request.user.username,
             'email': request.user.email,
             'experience': user_xp.xp
         })
-    except UserXP.DoesNotExist:
+    except User.DoesNotExist:
         return Response({
             'id': request.user.id,
             'username': request.user.username,
