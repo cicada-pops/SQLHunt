@@ -8,7 +8,9 @@ from users.models import Case, User, UserProgress
 
 logger = logging.getLogger(__name__)
 
+
 @receiver(post_save, sender=Case)
+@transaction.atomic
 def create_userprogress_for_all_users(sender, instance, created, **kwargs):
     if created:
         for user in User.objects.using('users').all():
@@ -21,7 +23,9 @@ def create_userprogress_for_all_users(sender, instance, created, **kwargs):
             except IntegrityError as e:
                 raise IntegrityError(f"Error while creating userprogres data: {str(e)}")
 
+
 @receiver(post_save, sender=User)
+@transaction.atomic
 def create_userprogress_for_new_user(sender, instance, created, **kwargs):
     if created:
         for case in Case.objects.using('users').all():
@@ -34,7 +38,9 @@ def create_userprogress_for_new_user(sender, instance, created, **kwargs):
             except IntegrityError as e:
                 raise IntegrityError(f"Error while creating userprogres data: {str(e)}")
 
+
 @receiver(post_save, sender=AuthUser)
+@transaction.atomic
 def create_user_on_profile_creation(sender, instance, created, **kwargs):
     if created:
         try:
@@ -47,6 +53,7 @@ def create_user_on_profile_creation(sender, instance, created, **kwargs):
 
 
 @receiver(post_delete, sender=AuthUser)
+@transaction.atomic
 def delete_user_on_profile_deletion(sender, instance, **kwargs):
     try:
         with transaction.atomic(using='users'):
@@ -57,6 +64,7 @@ def delete_user_on_profile_deletion(sender, instance, **kwargs):
 
 
 @receiver(pre_save, sender=UserProgress)
+@transaction.atomic
 def grant_xp_on_status_completed(sender, instance, **kwargs):
     if instance.pk:  
         try:
@@ -68,7 +76,9 @@ def grant_xp_on_status_completed(sender, instance, **kwargs):
         except Exception as e:
             logger.error(f"Error granting XP on UserProgress save (UserProgress id={instance.pk}): {e}", exc_info=True)
 
+
 @receiver(pre_delete, sender=Case)
+@transaction.atomic
 def deduct_xp_on_case_deletion(sender, instance, **kwargs):
     try:
         completed_progresses = UserProgress.objects.using('users').filter(case=instance, status='завершено')
