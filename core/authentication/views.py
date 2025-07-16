@@ -4,24 +4,21 @@ from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 from django.conf import settings
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordResetForm
-from django.contrib.auth.tokens import default_token_generator
 from django.http import JsonResponse
-from django.utils.encoding import force_str
-from django.utils.http import urlsafe_base64_decode
 from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from users.models import User as User
 
 from .serializers import (
+    PasswordResetConfirmSerializer,
     PasswordResetSerializer,
     UserRegistrationSerializer,
     UserSerializer,
@@ -151,27 +148,8 @@ def api_password_reset_confirm(request):
     """
     Confirm password reset and set new password
     """
-    try:
-        uid = force_str(urlsafe_base64_decode(request.data.get('uid', '')))
-        token = request.data.get('token', '')
-        password = request.data.get('password', '')
-        
-        if not uid or not token or not password:
-            raise ValidationError('Missing required fields')
-            
-        UserModel = get_user_model()
-        user = UserModel.objects.get(pk=uid)
-        
-        if not default_token_generator.check_token(user, token):
-            raise ValidationError('Invalid reset token')
-            
-        user.set_password(password)
-        user.save()
-        
+    serializer = PasswordResetConfirmSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
         return Response({'detail': 'Password has been reset successfully'})
-        
-    except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist) as e: # type: ignore
-        raise ValidationError(f'Invalid reset link: {str(e)}')
-    except Exception as e:
-        logger.error(f"Password reset confirmation error: {str(e)}")
-        raise ValidationError('Password reset failed')
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

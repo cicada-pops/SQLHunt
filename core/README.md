@@ -66,7 +66,7 @@
 1. Создайте и активируйте виртуальное окружение в корне проекта:
 
    ```bash
-   python3 -m venv .venv
+   python -m venv .venv
    source .venv/bin/activate 
    ```
 2. Установите зависимости:
@@ -81,24 +81,24 @@
 4. Выполните миграции, перейдя в каталог приложения:
 
    ```bash
-   python3 manage.py makemigrations
-   python3 manage.py migrate --database=auth
-   python3 manage.py migrate users --database=users
-   python3 manage.py migrate investigations --database=investigations
-   python3 manage.py migrate django_celery_results --database=celery
+   python manage.py makemigrations
+   python manage.py migrate
+   python manage.py migrate users --database=users
+   python manage.py migrate investigations --database=investigations
+   python manage.py migrate django_celery_results --database=celery
    ```
    Примечание: Так как база данных default пуста, то при каждом запуске migrate необходимо вручную указывать имя базы данных.
 5. Сгенерируйте данные и загрузите дела
 
    ```
-   python3 manage.py generate_investigations
-   python3 manage.py load_cases
+   python manage.py generate_investigations
+   python manage.py load_cases
    ```
    Примечание: для очистки данных используйте параметр --clear
 6. Создайте суперпользователя:
 
    ```bash
-   python3 manage.py createsuperuser --database=auth
+   python manage.py createsuperuser
    ```
 7. Запустите celery:
 
@@ -108,6 +108,6 @@
 8. Запустите сервер разработки:
 
    ```bash
-   python3 manage.py runserver_plus sqlhunt.com:8000 --cert-file cert.crt
+   python manage.py runserver_plus sqlhunt.com:8000 --cert-file cert.crt
    ```
    Примечание: Мы указали команде runserver_plus имя файла SSL/TLS-сертификата. Django Extensions автоматически сгенерирует ключ и сертификат. Пройдите по URL-адресу [https://sqlhunt.com:8000/](https://sqlhunt.com:8000/)
