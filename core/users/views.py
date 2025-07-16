@@ -1,9 +1,10 @@
-from django.shortcuts import render
+import logging
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import UserProgress, User
-import logging
+
+from .models import UserProgress
 
 logger = logging.getLogger(__name__)
 
@@ -16,13 +17,10 @@ def get_user_progress(request):
     try:
         logger.info(f"Получен запрос от пользователя ID: {request.user.id}")
       
-        progress = UserProgress.objects.filter(user_id=request.user.id)
-        logger.info(f"Получен прогресс: {progress.count()} записей")
+        progress = list(UserProgress.objects.filter(user_id=request.user.id).values('case_id', 'status'))
+        logger.info(f"Подготовлен ответ: {progress}")
         
-        result = list(progress.values('case_id', 'status'))
-        logger.info(f"Подготовлен ответ: {result}")
-        
-        return Response(result)
+        return Response(progress)
     except Exception as e:
         logger.error(f"Ошибка при получении прогресса: {str(e)}", exc_info=True)
         return Response({'error': str(e)}, status=500)

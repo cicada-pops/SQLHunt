@@ -144,8 +144,7 @@ class StatementModelTest(TestCase):
         )
         suspect = Suspect.objects.create(person=person, status='в розыске')
         suspect.cases.add(case)
-        alibi = Alibi.objects.create(status='подтверждено', case=case, description="Test description", suspect=suspect)
-        statement = Statement.objects.create(alibi=alibi, person=person, statement="Test statement", date_of_statement=date(2023, 1, 1))
+        statement = Statement.objects.create(case=case, person=person, statement="Test statement", date_of_statement=date(2023, 1, 1))
         statement.clean()
         statement.save()
 
@@ -156,8 +155,7 @@ class StatementModelTest(TestCase):
         )
         suspect = Suspect.objects.create(person=person, status='в розыске')
         suspect.cases.add(case)
-        alibi = Alibi.objects.create(status='подтверждено', case=case, description="Test description", suspect=suspect)
-        statement = Statement.objects.create(alibi=alibi, person=person, statement="Test statement", date_of_statement=date.today() + timedelta(days=1))
+        statement = Statement.objects.create(case=case, person=person, statement="Test statement", date_of_statement=date.today() + timedelta(days=1))
         with self.assertRaises(ValidationError):
             statement.clean()
 

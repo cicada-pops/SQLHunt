@@ -9,5 +9,5 @@ class UsersConfig(AppConfig):
 
     def ready(self):
         if 'migrate' not in sys.argv:
-            import users.signals
+            from . import signals  # noqa: F401
 

@@ -17,7 +17,10 @@ def check_answer(answer, case_id, user_id):
   if is_correct:
     if progress.status != "завершено":
       progress.status = "завершено"
+      user.xp += case.reward_xp
       progress.save(using="users")
+      user.save(using="users")
+      
     return True
   
   if progress.status != "завершено":

@@ -1,5 +1,5 @@
 class AuthenticationRouter:
-    app_labels = {'auth', 'contenttypes', 'sessions', 'admin', 'socialaccount', 'authentication'}
+    app_labels = {'auth', 'contenttypes', 'sessions', 'admin', 'socialaccount', 'authentication', 'account', 'authtoken'}
     db_name = 'auth'
 
     def db_for_read(self, model, **hints):
