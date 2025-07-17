@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, Key, Link as LinkIcon, Play, Send, Share2, Table, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/router"
 import { memo, useCallback, useEffect, useRef, useState } from "react"
 import ReactFlow, {
     Background,
@@ -16,10 +17,9 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useAuth } from "../contexts/auth-context"
-import Loader from "./bounce-loader"
 import authService from "../services/auth"
+import Loader from "./bounce-loader"
 import styles from './case-card.module.css'
-import { useRouter } from "next/router"
 
 // Определяем типы для колонки
 interface Column {
@@ -750,7 +750,7 @@ export const ExpandedCaseContent = memo(function ExpandedCaseContent({
         try {
           window.console.log(`[Task Status] Попытка ${attempts + 1}/${maxAttempts} для задачи ${taskId}`);
           
-          const statusResponse = await fetch(`https://sqlhunt.com:8000/api/tasks/${taskId}/status/`, {
+          const statusResponse = await fetch(`https://sqlhunt.com:8000/api/sql-task/${taskId}/`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Accept': 'application/json'

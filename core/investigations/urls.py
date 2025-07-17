@@ -7,8 +7,6 @@ urlpatterns = [
          include(
             [   
                 path('', views.get_case_list, name='case_list'),
-                path("<str:task_id>/", views.TaskStatusView.as_view(), name="task_status"),
-               
                 path('<int:case_id>/' , 
                      include(
                         [
@@ -20,7 +18,8 @@ urlpatterns = [
                 ),
             ]
         ),
-    )
+    ),
+    path("api/sql-task/<str:task_id>/", views.TaskStatusView.as_view(), name="task_status"),
 ]
 
 

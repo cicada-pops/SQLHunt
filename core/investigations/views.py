@@ -91,16 +91,5 @@ def get_case_list(request):
     """
     Возвращает список всех доступных дел с их основной информацией.
     """
-    cases = UserCase.objects.using('users').all()
-    case_list = [
-        {
-            'id': case.id,
-            'title': case.title,
-            'description': case.description,
-            'short_description': case.short_description,
-            'required_xp': case.required_xp,
-            'reward_xp': case.reward_xp,
-        }
-        for case in cases
-    ]
-    return Response(case_list)
+    cases = UserCase.objects.using('users').values()
+    return Response(list(cases))
