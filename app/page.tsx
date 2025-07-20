@@ -1,13 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { AuthModal } from "../components/auth-modal"
+import Loader from "../components/bounce-loader"
 import { CaseCard, ExpandedCaseContent } from "../components/case-card"
 import { Header } from "../components/header"
 import { AuthProvider, useAuth } from "../contexts/auth-context"
-import { useEffect, useCallback, useState, useRef } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { AuthModal } from "../components/auth-modal"
-import Loader from "../components/bounce-loader"
 
 interface CaseData {
   number: string;
@@ -130,7 +130,7 @@ function HomeContent() {
         const casesData = await response.json();
         
         // Получаем прогресс пользователя
-        const progressResponse = await fetch('https://sqlhunt.com:8000/api/users/userprogress/', {
+        const progressResponse = await fetch('https://sqlhunt.com:8000/api/userprogress/', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
             'Accept': 'application/json'
