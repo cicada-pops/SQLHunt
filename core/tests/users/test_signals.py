@@ -3,7 +3,7 @@ from django.test import TransactionTestCase
 from users.models import Case, User, UserProgress
 
 
-class SignalTests(TransactionTestCase):
+class UsersSignalTests(TransactionTestCase):
     databases = {'auth', 'users'}
 
     def setUp(self):

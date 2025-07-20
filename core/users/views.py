@@ -64,15 +64,18 @@ class ExecuteSQLView(APIView):
 
         return Response({"task_id": task.id}, status=status.HTTP_202_ACCEPTED)
 
-
 class TaskStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, task_id):
         result = AsyncResult(task_id, app=app)
-        if result.failed():
+
+        if result.status == 'SUCCESS':
+            return Response({"status": result.status, "result": str(result.result)})
+        elif result.status == 'FAILURE':
             return Response({"status": result.status, "error": str(result.result)})
-        return Response({"status": result.status})
+        else:
+            return Response({"status": result.status})
 
 
 class SubmitAnswerView(APIView):

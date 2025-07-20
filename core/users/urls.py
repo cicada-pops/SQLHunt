@@ -6,7 +6,7 @@ urlpatterns = [
     path('api/', 
          include(
             [
-                path('userprogress/', views.get_user_progress, name='user-progress'),
+                path('userprogress/', views.get_user_progress, name='user_progress'),
                 path('cases/', 
                     include(
                         [   
