@@ -15,7 +15,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from users.models import User
+
+from core.users.models import User
 
 from .serializers import (
     PasswordResetConfirmSerializer,
@@ -26,10 +27,12 @@ from .serializers import (
 
 logger = logging.getLogger(__name__)
 
+
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     callback_url = settings.GOOGLE_OAUTH_CALLBACK_URL
     client_class = OAuth2Client
+
 
 @require_GET
 @ensure_csrf_cookie
@@ -38,9 +41,10 @@ def get_csrf_token(request):
     This view sets the CSRF cookie and returns a 200 response.
     The CSRF cookie is needed for making POST requests.
     """
-    return JsonResponse({'detail': 'CSRF cookie set'})
+    return JsonResponse({"detail": "CSRF cookie set"})
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([AllowAny])
 def register_user(request):
     """
@@ -49,43 +53,52 @@ def register_user(request):
     serializer = UserRegistrationSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
-        refresh = RefreshToken.for_user(user) # type: ignore
-        return Response({
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
+        refresh = RefreshToken.for_user(user)  # type: ignore
+        return Response(
+            {
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                },
+                "token": {
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                },
             },
-            'token': {
-                'access': str(refresh.access_token),
-                'refresh': str(refresh),
-            }
-        }, status=status.HTTP_201_CREATED)
+            status=status.HTTP_201_CREATED,
+        )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([AllowAny])
 def api_login(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
+    username = request.data.get("username")
+    password = request.data.get("password")
     logger.info(f"Login attempt for user: {username}")
-    
+
     user = authenticate(username=username, password=password)
-    
+
     if user:
         refresh = RefreshToken.for_user(user)
         logger.info(f"Successful login for user: {username}")
-        return Response({
-            'user': UserSerializer(user).data,
-            'token': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
+        return Response(
+            {
+                "user": UserSerializer(user).data,
+                "token": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
             }
-        })
+        )
     logger.warning(f"Failed login attempt for user: {username}")
-    return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+    return Response(
+        {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
+    )
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def api_logout(request):
     try:
@@ -99,7 +112,7 @@ def api_logout(request):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_user_data(request):
     """
@@ -107,21 +120,26 @@ def get_user_data(request):
     """
     try:
         user_xp = User.objects.get(id=request.user.id)
-        return Response({
-            'id': request.user.id,
-            'username': request.user.username,
-            'email': request.user.email,
-            'experience': user_xp.xp
-        })
+        return Response(
+            {
+                "id": request.user.id,
+                "username": request.user.username,
+                "email": request.user.email,
+                "experience": user_xp.xp,
+            }
+        )
     except User.DoesNotExist:
-        return Response({
-            'id': request.user.id,
-            'username': request.user.username,
-            'email': request.user.email,
-            'experience': 0
-        })
+        return Response(
+            {
+                "id": request.user.id,
+                "username": request.user.username,
+                "email": request.user.email,
+                "experience": 0,
+            }
+        )
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([AllowAny])
 @ensure_csrf_cookie
 def api_password_reset(request):
@@ -130,19 +148,20 @@ def api_password_reset(request):
     """
     serializer = PasswordResetSerializer(data=request.data)
     if serializer.is_valid():
-        email = serializer.validated_data['email'] # type: ignore
-        form = PasswordResetForm({'email': email})
+        email = serializer.validated_data["email"]  # type: ignore
+        form = PasswordResetForm({"email": email})
         if form.is_valid():
             form.save(
                 request=request,
                 use_https=request.is_secure(),
                 from_email=None,  # Use default from settings
-                email_template_name='registration/password_reset_email.html'
+                email_template_name="registration/password_reset_email.html",
             )
-            return Response({'detail': _('Password reset email has been sent.')})
+            return Response({"detail": _("Password reset email has been sent.")})
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([AllowAny])
 def api_password_reset_confirm(request):
     """
@@ -151,5 +170,5 @@ def api_password_reset_confirm(request):
     serializer = PasswordResetConfirmSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
-        return Response({'detail': 'Password has been reset successfully'})
+        return Response({"detail": "Password has been reset successfully"})
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

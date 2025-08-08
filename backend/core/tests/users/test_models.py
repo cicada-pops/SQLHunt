@@ -1,11 +1,12 @@
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.test import TestCase
-from users.models import AvailableTable, Case, User, UserProgress
+
+from core.users.models import AvailableTable, Case, User, UserProgress
 
 
 class UsersModelTest(TestCase):
-    databases = {'users'}
+    databases = {"users"}
 
     def test_valid_user(self):
         user = User.objects.create(xp=10)
@@ -19,7 +20,7 @@ class UsersModelTest(TestCase):
 
 
 class CaseModelTest(TestCase):
-    databases = {'users'}
+    databases = {"users"}
 
     def test_valid_case(self):
         case = Case.objects.create(
@@ -27,13 +28,19 @@ class CaseModelTest(TestCase):
             description="A test case",
             required_xp=5,
             reward_xp=5,
-            answer="some valid answer"
+            answer="some valid answer",
         )
         case.full_clean()
         case.save()
 
     def test_invalid_negative_required_xp(self):
-        case = Case(title="Invalid XP Case", description="Bad case", required_xp=-1, answer="some invalid answer", reward_xp=5)
+        case = Case(
+            title="Invalid XP Case",
+            description="Bad case",
+            required_xp=-1,
+            answer="some invalid answer",
+            reward_xp=5,
+        )
         with self.assertRaises(ValidationError):
             case.full_clean()
 
@@ -43,7 +50,7 @@ class CaseModelTest(TestCase):
             description="Some description",
             required_xp=0,
             reward_xp=5,
-            answer="answer"
+            answer="answer",
         )
         with self.assertRaises(IntegrityError):
             Case.objects.create(
@@ -51,45 +58,56 @@ class CaseModelTest(TestCase):
                 description="Another description",
                 required_xp=1,
                 reward_xp=10,
-                answer="another answer"
+                answer="another answer",
             )
 
 
 class AvailableTablesModelTest(TestCase):
-    databases = {'users'}
+    databases = {"users"}
 
     def test_available_tables_unique(self):
-        case = Case.objects.create(title="Case", description="desc", required_xp=0, answer="some valid answer", reward_xp=5)
+        case = Case.objects.create(
+            title="Case",
+            description="desc",
+            required_xp=0,
+            answer="some valid answer",
+            reward_xp=5,
+        )
         AvailableTable.objects.create(case=case, table="evidence")
         with self.assertRaises(IntegrityError):
             AvailableTable.objects.create(case=case, table="evidence")
 
 
 class UserProgressModelTest(TestCase):
-    databases = {'users'}
+    databases = {"users"}
 
     def setUp(self):
         self.user = User.objects.create(xp=10)
         self.case = Case.objects.create(
-            title="Case 1", description="desc",
-            required_xp=5, answer="some valid answer", reward_xp=5,
+            title="Case 1",
+            description="desc",
+            required_xp=5,
+            answer="some valid answer",
+            reward_xp=5,
         )
 
     def test_valid_user_progress(self):
         UserProgress.objects.all().delete()
-        progress = UserProgress(user=self.user, case=self.case, status='в процессе')
+        progress = UserProgress(user=self.user, case=self.case, status="в процессе")
         progress.full_clean()
         progress.save()
         self.assertIsNotNone(progress.pk)
 
     def test_not_enough_xp(self):
         low_xp_user = User.objects.create(xp=2)
-        progress = UserProgress(user=low_xp_user, case=self.case, status='не начато')
+        progress = UserProgress(user=low_xp_user, case=self.case, status="не начато")
         with self.assertRaises(ValidationError):
             progress.full_clean()
 
     def test_unique_user_case(self):
         UserProgress.objects.all().delete()
-        UserProgress.objects.create(user=self.user, case=self.case, status='в процессе')
+        UserProgress.objects.create(user=self.user, case=self.case, status="в процессе")
         with self.assertRaises(IntegrityError):
-            UserProgress.objects.create(user=self.user, case=self.case, status='в процессе')
+            UserProgress.objects.create(
+                user=self.user, case=self.case, status="в процессе"
+            )

@@ -1,32 +1,46 @@
 import re
 
 import sqlparse
+from core.users.models import AvailableTable
 from django.db import connections
 from sqlglot import exp, parse
 from sqlparse.tokens import DML, Keyword
-from users.models import AvailableTable
 
 FORBIDDEN_KEYWORDS = {
-    'INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'TRUNCATE', 'CREATE',
-    'REPLACE', 'GRANT', 'REVOKE', 'INTO', 'MERGE', 'CALL', 'EXEC'
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "DROP",
+    "ALTER",
+    "TRUNCATE",
+    "CREATE",
+    "REPLACE",
+    "GRANT",
+    "REVOKE",
+    "INTO",
+    "MERGE",
+    "CALL",
+    "EXEC",
 }
 
 FORBIDDEN_PATTERNS = [
-    r'--',                
-    r'/\*.*\*/',         
-    r';',                   
-    r'\bRECURSIVE\b',
-    r'\bINTO\b',
+    r"--",
+    r"/\*.*\*/",
+    r";",
+    r"\bRECURSIVE\b",
+    r"\bINTO\b",
 ]
+
 
 def has_limit(token_list) -> bool:
     for token in token_list.tokens:
-        if token.ttype is Keyword and token.value.upper() == 'LIMIT':
+        if token.ttype is Keyword and token.value.upper() == "LIMIT":
             return True
         elif token.is_group:
             if has_limit(token):
                 return True
     return False
+
 
 def extract_tables(sql: str) -> set[str]:
     try:
@@ -34,11 +48,14 @@ def extract_tables(sql: str) -> set[str]:
         tables = set()
         for tree in expressions:
             tables.update(
-                t.name for t in tree.find_all(exp.Table) if t and t.name  # type: ignore
+                t.name
+                for t in tree.find_all(exp.Table)
+                if t and t.name  # type: ignore
             )
         return tables
     except Exception:
         return set()
+
 
 def contains_forbidden_keywords(token_list) -> bool:
     for token in token_list.tokens:
@@ -49,14 +66,18 @@ def contains_forbidden_keywords(token_list) -> bool:
                 return True
     return False
 
+
 def contains_forbidden_patterns(raw_sql: str) -> bool:
     for pattern in FORBIDDEN_PATTERNS:
         if re.search(pattern, raw_sql, flags=re.IGNORECASE | re.DOTALL):
             return True
     return False
 
+
 def validate_and_prepare_query(raw_sql: str, allowed_user_tables: set[str]) -> str:
-    cleaned_sql = sqlparse.format(raw_sql.strip(), strip_comments=True).strip().rstrip(';')
+    cleaned_sql = (
+        sqlparse.format(raw_sql.strip(), strip_comments=True).strip().rstrip(";")
+    )
     parsed = sqlparse.parse(cleaned_sql)
 
     if not parsed:
@@ -64,7 +85,7 @@ def validate_and_prepare_query(raw_sql: str, allowed_user_tables: set[str]) -> s
 
     statement = parsed[0]
 
-    if statement.get_type() != 'SELECT':
+    if statement.get_type() != "SELECT":
         raise ValueError("Разрешён только SELECT-запрос.")
 
     if contains_forbidden_patterns(cleaned_sql):
@@ -84,6 +105,7 @@ def validate_and_prepare_query(raw_sql: str, allowed_user_tables: set[str]) -> s
         cleaned_sql += " LIMIT 1000"
 
     return cleaned_sql
+
 
 def run_validated_sql_query(user_id: int, case_id: int, raw_sql: str) -> dict:
     allowed_tables = set(

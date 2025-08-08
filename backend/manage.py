@@ -7,7 +7,7 @@ import sys
 from dotenv import load_dotenv
 
 if __name__ == "__main__":
-    load_dotenv()
+    load_dotenv(".env")
 
     settings_module = os.environ.get("DJANGO_SETTINGS_MODULE", default=None)
 
@@ -17,7 +17,7 @@ if __name__ == "__main__":
                 "Ignoring config('DJANGO_SETTINGS_MODULE') because it's test. "
                 "Using 'sqlhunt.config.test'"
             )
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "clipboard.settings.test")
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.test")
     else:
         if settings_module is None:
             print(
