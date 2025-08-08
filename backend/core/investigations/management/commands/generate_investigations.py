@@ -27,9 +27,13 @@ class Command(BaseCommand):
             generator.clear_all_data()
             self.stdout.write(self.style.SUCCESS("Данные успешно очищены."))
             return
+        
+        if generator.has_data():
+            self.stdout.write(self.style.WARNING("Данные investigations уже существуют, генерация пропущена."))
+            return
 
         self.stdout.write(
-            self.style.WARNING("Генерация новых данных (с предварительной очисткой)...")
+            self.style.WARNING("Генерация новых данных...")
         )
         generator.run(
             persons=options["persons"],

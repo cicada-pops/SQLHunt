@@ -63,6 +63,8 @@ services:
         python manage.py makemigrations &&
         python manage.py migrate --database=users &&
         python manage.py migrate investigations --database=investigations && 
+        python manage.py generate_investigations &&
+        python manage.py load_cases &&
         python manage.py runserver_plus 0.0.0.0:8000 --cert-file cert.crt
       "
     ports:

@@ -49,7 +49,10 @@ class InvestigationsDataGenerator:
         self.scenes = []
         self.evidence = []
         self.case_suspects = []
-
+        
+    def has_data(self):
+        return Case.objects.exists()
+    
     def generate_persons(self, count: int = 1500):
         for _ in range(count):
             name = get_name()
