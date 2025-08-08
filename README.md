@@ -38,7 +38,7 @@ The frontend will be available at `http://localhost:3000`
    uv tool install ruff
    ```
 
-4. Set up environment variables in the [`backend/.env`](backend/.env) file.
+4. Set up environment variables in the [`backend/.env`](./backend/.env) file.
 
 5. Run the services with the following command:
     ```bash
@@ -46,7 +46,7 @@ The frontend will be available at `http://localhost:3000`
     ```
 
 > [!NOTE]
-> For more information, see [`backend/README`](backend/README.md)
+> For more information, see [`backend/README`](./backend/README.md)
 
 > [!NOTE]
 > If runserver_plus is used with an SSL certificate, Django Extensions will automatically generate the certificate and key. [https://sqlhunt.com:8000/](https://sqlhunt.com:8000/)
