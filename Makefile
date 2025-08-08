@@ -3,7 +3,7 @@ SHELL := /bin/zsh -eu -o pipefail
 ARG := $(word 2, $(MAKECMDGOALS))
 SERVICE := app
 
-.PHONY: clean up down restart build logs shell manage migrate \
+.PHONY: clean up down build logs shell manage migrate \
         makemigrations createsuperuser check test test_reset \
 		update_dependencies clean_migrations
 
@@ -18,9 +18,7 @@ up:
 	docker compose --env-file ./backend/.env up --build -d
 
 down:
-	docker compose down
-
-restart: down up
+	docker compose --env-file ./backend/.env down
 
 logs:
 	docker compose logs -f $(ARG)
@@ -55,5 +53,5 @@ test_reset:
 	docker-compose --env-file ./backend/.env exec -T $(SERVICE) python manage.py test $(ARG) --parallel
 
 update_dependencies:
-	docker compose down
+	docker compose --env-file ./backend/.env down
 	docker compose --env-file ./backend/.env up -d --build

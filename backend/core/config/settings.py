@@ -172,7 +172,7 @@ DATABASES = {
         "NAME": os.getenv("DB_USERS", "users"),
         "USER": os.getenv("POSTGRES_USER"),
         "PASSWORD": os.getenv("DB_USERS_PASSWORD"),
-        "HOST": os.getenv("DB_USER_HOST", "db1"),
+        "HOST": os.getenv("DB_USERS_HOST", "sqlhunt-db1-1"),
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
         "TEST": {
             "DEPENDENCIES": [],
@@ -183,7 +183,7 @@ DATABASES = {
         "NAME": os.getenv("DB_INVESTIGATIONS", "investigations"),
         "USER": os.getenv("POSTGRES_USER"),
         "PASSWORD": os.getenv("DB_INVESTIGATIONS_PASSWORD"),
-        "HOST": os.getenv("DB_INVESTIGATIONS_HOST", "db2"),
+        "HOST": os.getenv("DB_INVESTIGATIONS_HOST", "sqlhunt-db2-1"),
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
         "TEST": {
             "DEPENDENCIES": [],
@@ -194,7 +194,7 @@ DATABASES = {
         "NAME": os.getenv("DB_USERS", "users"),
         "USER": os.getenv("POSTGRES_USER"),
         "PASSWORD": os.getenv("DB_USERS_PASSWORD"),
-        "HOST": os.getenv("DB_USER_HOST", "db1"),
+        "HOST": os.getenv("DB_USERS_HOST", "sqlhunt-db1-1"),
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
         "TEST": {
             "DEPENDENCIES": [],
