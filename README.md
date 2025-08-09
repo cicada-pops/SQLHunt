@@ -57,7 +57,7 @@ The frontend will be available at `http://localhost:3000`
 > For example, add the following line:
 >
 > ```
-> 127.0.0.1   sqlhunt.com
+> 127.0.0.1       sqlhunt.com
 > ```
 >
 > This ensures that requests to `sqlhunt.com` are routed to your local machine.

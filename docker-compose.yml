@@ -54,7 +54,7 @@ services:
     networks:
       - backend
 
-  app:
+  backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -79,11 +79,11 @@ services:
       result:
         condition: service_started
     env_file:
-      - path: backend/.env
+      - ./backend/.env
     environment:
       - PYTHONPATH=/app
     volumes:
-      - ./backend:/app
+      - ./backend:/app/
       - /app/.venv
     networks:
       - backend
@@ -99,7 +99,7 @@ services:
       result:
         condition: service_started
     env_file: 
-      .env
+      - ./backend/.env
     networks:
       - backend
 

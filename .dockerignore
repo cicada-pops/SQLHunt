@@ -44,7 +44,7 @@ pip-delete-this-directory.txt
 *.log
 
 # Docker
-Dockerfile
+backend/Dockerfile
 docker-compose.yml
 docker-compose.override.yml
 docker/docker-compose.prod.yml
@@ -80,6 +80,12 @@ docker/docker-compose.prod.yml
 
 # kira-release script
 release.config.js
+# backend/.venv/
+# backend/.env.example
+# backend/.env
+# backend/README
 
 **
 !backend/
+!pyproject.toml
+!uv.lock
