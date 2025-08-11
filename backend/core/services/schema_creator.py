@@ -125,7 +125,3 @@ def get_schema(case_id):
                 )
 
         return schema
-    except ObjectDoesNotExist as e:
-        raise e
-    except Exception as e:
-        raise Exception(f"Error getting schema for case {case_id}: {str(e)}")

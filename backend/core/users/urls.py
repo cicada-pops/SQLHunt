@@ -7,19 +7,19 @@ urlpatterns = [
         "api/",
         include(
             [
-                path("userprogress/", views.get_user_progress, name="user_progress"),
+                path("userprogress/", views.UserProgressListView.as_view(), name="user_progress"),
                 path(
                     "cases/",
                     include(
                         [
-                            path("", views.get_case_list, name="case_list"),
+                            path("", views.CaseListView.as_view(), name="case_list"),
                             path(
                                 "<int:case_id>/",
                                 include(
                                     [
                                         path(
                                             "schema/",
-                                            views.schema_view,
+                                            views.SchemaView.as_view(),
                                             name="case_schema",
                                         ),
                                         path(
