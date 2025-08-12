@@ -4,7 +4,6 @@ import logging
 from celery.result import AsyncResult
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -20,8 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 class SchemaView(APIView):
-    permission_classes = [IsAuthenticated]
-
     @validate_case_access
     def get(self, request, case_id):
         try:
@@ -32,8 +29,6 @@ class SchemaView(APIView):
 
 
 class ExecuteSQLView(APIView):
-    permission_classes = [IsAuthenticated]
-
     @validate_case_access
     def post(self, request, case_id):
         sql = request.data.get("sql", "").strip()
@@ -66,8 +61,6 @@ class ExecuteSQLView(APIView):
 
 
 class TaskStatusView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def get(self, request, task_id):
         result = AsyncResult(task_id, app=app)
 
@@ -87,8 +80,6 @@ class TaskStatusView(APIView):
 
 
 class SubmitAnswerView(APIView):
-    permission_classes = [IsAuthenticated]
-
     @validate_case_access
     def post(self, request):
         answer = request.data.get("answer", "")
@@ -99,16 +90,12 @@ class SubmitAnswerView(APIView):
 
 
 class CaseListView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def get(self, request):
         cases = UserCase.objects.using("users").values()
         return Response(cases)
 
 
 class UserProgressListView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def get(self, request):
         progress = list(
             UserProgress.objects.filter(user_id=request.user.id).values(

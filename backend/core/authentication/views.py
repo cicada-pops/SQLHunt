@@ -12,7 +12,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -97,48 +97,6 @@ def api_login(request):
         {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
     )
 
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def api_logout(request):
-    try:
-        refresh_token = request.data["refresh"]
-        token = RefreshToken(refresh_token)
-        token.blacklist()
-        logger.info(f"Successfully logged out user: {request.user.username}")
-        return Response(status=status.HTTP_205_RESET_CONTENT)
-    except Exception as e:
-        logger.error(f"Error during logout: {str(e)}")
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def get_user_data(request):
-    """
-    Get current user data including experience
-    """
-    try:
-        user_xp = User.objects.get(id=request.user.id)
-        return Response(
-            {
-                "id": request.user.id,
-                "username": request.user.username,
-                "email": request.user.email,
-                "experience": user_xp.xp,
-            }
-        )
-    except User.DoesNotExist:
-        return Response(
-            {
-                "id": request.user.id,
-                "username": request.user.username,
-                "email": request.user.email,
-                "experience": 0,
-            }
-        )
-
-
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @ensure_csrf_cookie
@@ -172,3 +130,42 @@ def api_password_reset_confirm(request):
         serializer.save()
         return Response({"detail": "Password has been reset successfully"})
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+def api_logout(request):
+    try:
+        refresh_token = request.data["refresh"]
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        logger.info(f"Successfully logged out user: {request.user.username}")
+        return Response(status=status.HTTP_205_RESET_CONTENT)
+    except Exception as e:
+        logger.error(f"Error during logout: {str(e)}")
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+def get_user_data(request):
+    """
+    Get current user data including experience
+    """
+    try:
+        user_xp = User.objects.get(id=request.user.id)
+        return Response(
+            {
+                "id": request.user.id,
+                "username": request.user.username,
+                "email": request.user.email,
+                "experience": user_xp.xp,
+            }
+        )
+    except User.DoesNotExist:
+        return Response(
+            {
+                "id": request.user.id,
+                "username": request.user.username,
+                "email": request.user.email,
+                "experience": 0,
+            }
+        )
