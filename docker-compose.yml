@@ -1,4 +1,21 @@
 services:
+  frontend:
+    build:
+      dockerfile: frontend/Dockerfile
+      context: .
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    env_file:
+      - ./frontend/.env
+    volumes:
+      - ./frontend:/app/
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    networks:
+      - backend
+
+
   db1:
     image: postgres:17-alpine
     environment:
@@ -98,6 +115,8 @@ services:
         condition: service_healthy
       result:
         condition: service_started
+    environment:
+    - PYTHONPATH=/app/backend
     env_file: 
       - ./backend/.env
     networks:

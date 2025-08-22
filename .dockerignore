@@ -80,12 +80,17 @@ docker/docker-compose.prod.yml
 
 # kira-release script
 release.config.js
-# backend/.venv/
-# backend/.env.example
-# backend/.env
-# backend/README
 
 **
 !backend/
 !pyproject.toml
 !uv.lock
+!frontend/
+
+# backend/.venv/
+# backend/.env.example
+# backend/.env
+# backend/README
+
+# frontend/.env
+# frontend/.env.example

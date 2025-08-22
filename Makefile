@@ -1,7 +1,7 @@
 SHELL := /bin/zsh -eu -o pipefail
 
 ARG := $(word 2, $(MAKECMDGOALS))
-SERVICE := app
+SERVICE := backend
 
 .PHONY: clean up down build logs shell manage migrate \
         makemigrations createsuperuser check test test_reset \
@@ -24,7 +24,7 @@ logs:
 	docker compose logs -f $(ARG)
 
 shell:
-	docker compose --env-file ./backend/.env exec $(ARG) bash
+	docker compose --env-file ./$(ARG)/.env exec $(ARG) sh
 
 manage:
 	docker compose --env-file ./backend/.env exec $(SERVICE) python manage.py $(ARG)

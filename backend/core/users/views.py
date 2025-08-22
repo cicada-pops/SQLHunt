@@ -81,7 +81,7 @@ class TaskStatusView(APIView):
 
 class SubmitAnswerView(APIView):
     @validate_case_access
-    def post(self, request):
+    def post(self, request, case_id=None):
         answer = request.data.get("answer", "")
         success = check_answer(
             answer=answer, user_id=request.user.id, case_id=request.case.id
