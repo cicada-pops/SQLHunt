@@ -14,6 +14,7 @@ clean:
 clean_migrations:
 	@find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
 	@find . -path "*/migrations/*.pyc" -delete	
+	
 up:
 	docker compose --env-file ./backend/.env up --build -d
 
@@ -24,7 +25,7 @@ logs:
 	docker compose logs -f $(ARG)
 
 shell:
-	docker compose --env-file ./$(ARG)/.env exec $(ARG) sh
+	docker compose --env-file ./backend/.env exec $(ARG) sh
 
 manage:
 	docker compose --env-file ./backend/.env exec $(SERVICE) python manage.py $(ARG)

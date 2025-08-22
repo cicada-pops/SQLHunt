@@ -3,8 +3,6 @@ services:
     build:
       dockerfile: frontend/Dockerfile
       context: .
-    environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     env_file:
       - ./frontend/.env
     volumes:
@@ -14,44 +12,39 @@ services:
       - "3000:3000"
     networks:
       - backend
-
-
+      
   db1:
     image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${DB_USERS_PASSWORD}
-      POSTGRES_DB: ${DB_USERS}
     ports:
       - "5433:5432"
     volumes:
       - users_db:/var/lib/postgresql/data
     env_file:
       - ./backend/.env
+    environment:
+      - POSTGRES_DB=users
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${DB_USERS}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d users"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   db2:
     image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${DB_INVESTIGATIONS_PASSWORD}
-      POSTGRES_DB: ${DB_INVESTIGATIONS}
     ports:
       - "5432:5432"
     volumes:
       - investigations_db:/var/lib/postgresql/data
     env_file:
       - ./backend/.env
+    environment:
+      - POSTGRES_DB=investigations
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${DB_INVESTIGATIONS}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d investigations"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -116,7 +109,7 @@ services:
       result:
         condition: service_started
     environment:
-    - PYTHONPATH=/app/backend
+      - PYTHONPATH=/app/backend
     env_file: 
       - ./backend/.env
     networks:
