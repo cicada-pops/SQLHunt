@@ -9,38 +9,19 @@
 ## Prerequisites
 
 - Node.js (v18 or higher)
-- Python (v3.8 or higher)
+- Python (v3.11 or higher)
 - pnpm (package manager)
+- uv (package manager)
+- ruff (linter and code formatter)
+- Docker (v28 or higher)
+- Docker Compose (v2 or higher)
 
-The frontend will be available at `http://localhost:3000`
 
-   ```
-   npm run dev
-   ```
+## Setup
 
-## Backend Setup
+1. Set up environment variables in the `backend/.env` file.
 
-1. Install Docker and Docker Compose:
-
-   ```bash
-   brew install --cask docker
-   brew install docker-compose
-
-2. Install the uv package manager:
-
-   ```bash
-   brew install uv 
-   ```
-
-3. Install Ruff:
-
-   ```bash
-   uv tool install ruff
-   ```
-
-4. Set up environment variables in the [`backend/.env`](./backend/.env) file.
-
-5. Run the services with the following command:
+2. Run the services with the following command and navigate to [`http://localhost:3000`](http://localhost:3000):
     ```bash
     make up
     ```
