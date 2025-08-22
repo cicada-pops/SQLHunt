@@ -49,7 +49,7 @@ The frontend will be available at `http://localhost:3000`
 > For more information, see [`backend/README`](./backend/README.md)
 
 > [!NOTE]
-> If runserver_plus is used with an SSL certificate, Django Extensions will automatically generate the certificate and key. [https://sqlhunt.com:8000/](https://sqlhunt.com:8000/)
+> If runserver_plus is used with an SSL certificate, Django Extensions will automatically generate the certificate and key. Don't forget to add permission to visit the site [https://sqlhunt.com:8000/](https://sqlhunt.com:8000/)
 
 > [!IMPORTANT]
 >
