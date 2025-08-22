@@ -26,6 +26,8 @@ class SchemaView(APIView):
             return Response(schema)
         except ObjectDoesNotExist as e:
             return Response({"error": str(e)}, status=404)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ExecuteSQLView(APIView):

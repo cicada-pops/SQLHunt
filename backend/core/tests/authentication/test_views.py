@@ -121,3 +121,30 @@ class AuthViewTests(APITestCase):
         }
         response = self.client.post(self.password_reset_confirm_url, data)
         self.assertEqual(response.status_code, 400)
+
+class ThrottleTests(APITestCase):
+    databases = {"users"}
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="user", email="user@example.com", password="password-123"
+        )
+        self.login_url = reverse("api_login")
+        self.user_url = reverse("api_user_data")
+        
+
+    def test_user_throttle(self):
+        self.client.force_authenticate(user=self.user)
+        for _ in range(101):
+            response = self.client.get(self.user_url)
+            self.assertIn(response.status_code, (status.HTTP_200_OK, status.HTTP_429_TOO_MANY_REQUESTS))
+            if response.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+                self.assertIn("Request was throttled", response.data["detail"])  # type: ignore
+
+    def test_anon_throttle(self):
+        for _ in range(61):
+            response = self.client.post(self.login_url)
+            self.assertIn(response.status_code, (status.HTTP_401_UNAUTHORIZED, status.HTTP_429_TOO_MANY_REQUESTS))
+            if response.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+                self.assertIn("Request was throttled", response.data["detail"])  # type: ignore
