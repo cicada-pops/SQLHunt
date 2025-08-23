@@ -83,11 +83,9 @@ def api_login(request):
     cooloff_time = getattr(settings, "DEFENDER_COOLOFF_TIME", 60)
     failure_limit = getattr(settings, "DEFENDER_LOGIN_FAILURE_LIMIT", 3)
     
-    attempts = utils.get_user_attempts(request, get_username=lambda r: username)
-    logger.info(f"{username} has {attempts} failed login attempts")
     if utils.is_already_locked(request, get_username=lambda r: username):
         detail = (
-            f"You have attempted to login {failure_limit} times with no success. "
+            f"You have attempted to login {failure_limit+1} times with no success. "
             f"Your account is locked for {cooloff_time} seconds."
         )
         return Response({"error": detail}, status=status.HTTP_403_FORBIDDEN)

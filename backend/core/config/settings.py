@@ -67,7 +67,6 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "defender.middleware.FailedLoginMiddleware", 
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -287,6 +286,11 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": True,
         },
+        "core.authentication.views": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 
@@ -341,5 +345,9 @@ CELERY_ACCEPT_CONTENT = ["json"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 DEFENDER_REDIS_URL = os.getenv("DEFENDER_REDIS_URL")
-DEFENDER_LOGIN_FAILURE_LIMIT = 5
 DEFENDER_COOLOFF_TIME = 60
+
+# Number of failed login attempts before a user is locked out.
+# django-defender checks the lock *after* recording a failed attempt,
+# so the actual lock happens 1 attempt later than this number.
+DEFENDER_LOGIN_FAILURE_LIMIT = 2
