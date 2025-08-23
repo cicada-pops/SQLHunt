@@ -1,5 +1,6 @@
 import logging
 
+
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
@@ -15,6 +16,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from defender import utils
 
 from core.users.models import User
 
@@ -78,11 +80,35 @@ def api_login(request):
     password = request.data.get("password")
     logger.info(f"Login attempt for user: {username}")
 
+    cooloff_time = getattr(settings, "DEFENDER_COOLOFF_TIME", 60)
+    failure_limit = getattr(settings, "DEFENDER_LOGIN_FAILURE_LIMIT", 3)
+    
+    attempts = utils.get_user_attempts(request, get_username=lambda r: username)
+    logger.info(f"{username} has {attempts} failed login attempts")
+    if utils.is_already_locked(request, get_username=lambda r: username):
+        detail = (
+            f"You have attempted to login {failure_limit} times with no success. "
+            f"Your account is locked for {cooloff_time} seconds."
+        )
+        return Response({"error": detail}, status=status.HTTP_403_FORBIDDEN)
+
     user = authenticate(username=username, password=password)
 
     if user:
         refresh = RefreshToken.for_user(user)
         logger.info(f"Successful login for user: {username}")
+
+        utils.add_login_attempt_to_db(
+            request,
+            login_valid=True,
+            get_username=lambda r: username, 
+        )
+        utils.check_request(
+            request,
+            login_unsuccessful=False,
+            get_username=lambda r: username,
+        )
+
         return Response(
             {
                 "user": UserSerializer(user).data,
@@ -92,10 +118,20 @@ def api_login(request):
                 },
             }
         )
+
     logger.warning(f"Failed login attempt for user: {username}")
-    return Response(
-        {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
+    utils.add_login_attempt_to_db(
+        request,
+        login_valid=False,
+        get_username=lambda r: username
     )
+    utils.check_request(
+        request,
+        login_unsuccessful=True,
+        get_username=lambda r: username,
+    )
+
+    return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(["POST"])
 @permission_classes([AllowAny])

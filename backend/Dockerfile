@@ -10,12 +10,15 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 
+ENV PATH="/app/.venv/bin:$PATH"
+
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=./uv.lock,target=uv.lock \
     --mount=type=bind,source=./pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project --no-dev
 
 COPY backend/ ./backend
+
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 

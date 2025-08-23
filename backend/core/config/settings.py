@@ -24,7 +24,7 @@ load_dotenv(".env")
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_extensions",
+    "defender",
     "dj_rest_auth",
     "dj_rest_auth.registration",
     "rest_framework",
@@ -66,6 +67,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "defender.middleware.FailedLoginMiddleware", 
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -326,7 +328,7 @@ SOCIALACCOUNT_PROVIDERS = {
 
 # Celery settings
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", default="")
-CELERY_RESULT_BACKEND = os.getenv("REDIS_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_REDIS_URL")
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30
 
@@ -337,3 +339,7 @@ CELERY_ACCEPT_CONTENT = ["json"]
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+DEFENDER_REDIS_URL = os.getenv("DEFENDER_REDIS_URL")
+DEFENDER_LOGIN_FAILURE_LIMIT = 5
+DEFENDER_COOLOFF_TIME = 60
