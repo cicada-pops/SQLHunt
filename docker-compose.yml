@@ -93,7 +93,7 @@ services:
     environment:
       - PYTHONPATH=/app
     volumes:
-      - ./backend:/app/
+      - ./backend:/app/backend
       - /app/.venv
     networks:
       - backend

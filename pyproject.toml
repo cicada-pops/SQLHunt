@@ -26,7 +26,6 @@ dependencies = [
     "django-extensions==4.1",
     "djangorestframework==3.16.0",
     "djangorestframework-simplejwt==5.5.0",
-    "dotenv==0.9.9",
     "faker==37.3.0",
     "gunicorn>=23.0.0",
     "idna==3.10",

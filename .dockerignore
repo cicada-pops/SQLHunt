@@ -68,6 +68,7 @@ docker/docker-compose.prod.yml
 # ipython:
 .ipython/
 .python_history
+.venv
 
 # ruff:
 .ruff_cache/

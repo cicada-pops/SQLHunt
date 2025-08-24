@@ -28,7 +28,7 @@ FROM python:3.13-slim-bookworm
 # Python executable must be the same, e.g., using python:3.11-slim-bookworm
 # will fail.
 
-WORKDIR /app
+WORKDIR /app/backend
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \

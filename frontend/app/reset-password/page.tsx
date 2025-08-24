@@ -1,6 +1,6 @@
 'use client';
 
-import authService from '@/frontend/services/auth';
+import authService from '@/services/auth';
 import { X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
