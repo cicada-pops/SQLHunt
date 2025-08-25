@@ -28,7 +28,6 @@ class InvestigationsRouter:
 
 class UsersRouter:
     app_labels = {
-        "defender",
         "account",
         "admin",
         "auth",

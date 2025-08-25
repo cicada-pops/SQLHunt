@@ -26,7 +26,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d users"]
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d users"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -44,7 +44,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d investigations"]
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d investigations"]
       interval: 5s
       timeout: 5s
       retries: 5

@@ -31,3 +31,8 @@ CELERY_TASK_EAGER_PROPAGATES = True
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SECURE = False
 SESSION_COOKIE_HTTPONLY = True
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": True, 
+}
