@@ -22,7 +22,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         validators=[
             UniqueValidator(
                 queryset=User.objects.all(),
-                message="Пользователь с таким именем уже существует",
+                message="User with this username already exists",
             )
         ],
     )
@@ -31,7 +31,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         validators=[
             UniqueValidator(
                 queryset=User.objects.all(),
-                message="Пользователь с таким email уже зарегистрирован",
+                message="User with this email already exists",
             )
         ],
     )
@@ -43,21 +43,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def validate(self, data):  # type: ignore
         if data["password"] != data["password2"]:
             logger.warning("Password mismatch in registration")
-            raise serializers.ValidationError({"password": "Пароли не совпадают"})
+            raise serializers.ValidationError({"password": "Passwords do not match"})
         try:
             validate_password(data["password"])
         except DjangoValidationError as e:
-            translations = {
-                "This password is too short. It must contain at least 8 characters.": "Пароль слишком короткий",
-                "This password is too common.": "Пароль слишком простой и распространённый",
-                "This password is entirely numeric.": "Пароль не должен состоять только из цифр",
-            }
-
-            translated_errors = []
-            for msg in e.messages:
-                translated_errors.append(translations.get(msg, msg))
-
-            raise serializers.ValidationError({"password": translated_errors})
+            raise serializers.ValidationError({"password": e.messages})
 
         return data
 
@@ -81,7 +71,7 @@ class PasswordResetSerializer(serializers.Serializer):
         try:
             self.user = User.objects.get(email=email)
         except User.DoesNotExist:
-            raise serializers.ValidationError("User with this email does not exist.")
+            raise serializers.ValidationError("User with this email does not exist")
         return email
 
 
@@ -99,7 +89,8 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
         if not default_token_generator.check_token(user, attrs["token"]):
             raise serializers.ValidationError("Invalid or expired token")
-
+        
+        validate_password(attrs["password"], user)
         attrs["user"] = user
         return attrs
 

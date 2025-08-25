@@ -39,7 +39,7 @@ class UserRegistrationSerializerTest(TestCase):
         serializer = UserRegistrationSerializer(data=data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("password", serializer.errors)
-        self.assertEqual(serializer.errors["password"][0], "Пароли не совпадают")  # type: ignore
+        self.assertEqual(serializer.errors["password"][0], "Passwords do not match")  # type: ignore
 
     def test_short_password(self):
         data = {
@@ -51,7 +51,7 @@ class UserRegistrationSerializerTest(TestCase):
         serializer = UserRegistrationSerializer(data=data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("password", serializer.errors)
-        self.assertIn("Пароль слишком короткий", serializer.errors["password"])  # type: ignore
+        self.assertIn("This password is too short. It must contain at least 8 characters.", serializer.errors["password"])  # type: ignore
 
     def test_numeric_password(self):
         data = {
@@ -64,7 +64,7 @@ class UserRegistrationSerializerTest(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn("password", serializer.errors)
         self.assertIn(
-            "Пароль не должен состоять только из цифр",
+            "This password is entirely numeric.",
             serializer.errors["password"],  # type: ignore
         )  # type: ignore
 
@@ -82,7 +82,7 @@ class UserRegistrationSerializerTest(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn("email", serializer.errors)
         self.assertIn(
-            "Пользователь с таким email уже зарегистрирован",
+            "User with this email already exists",
             serializer.errors["email"][0],  # type: ignore
         )  # type: ignore
 
@@ -100,7 +100,7 @@ class UserRegistrationSerializerTest(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn("username", serializer.errors)
         self.assertIn(
-            "Пользователь с таким именем уже существует",
+            "User with this username already exists",
             serializer.errors["username"][0],  # type: ignore
         )  # type: ignore
 
@@ -120,7 +120,7 @@ class PasswordResetSerializerTest(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn("email", serializer.errors)
         self.assertIn(
-            "User with this email does not exist.",
+            "User with this email does not exist",
             serializer.errors["email"],  # type: ignore
         )  # type: ignore
 

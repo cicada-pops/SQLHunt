@@ -49,7 +49,7 @@ class AuthViewTests(APITestCase):
         response = self.client.post(self.register_url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("password", response.data)  # type: ignore
-        self.assertIn("Пароли не совпадают", response.data["password"][0])  # type: ignore
+        self.assertIn("Passwords do not match", response.data["password"][0])  # type: ignore
 
     def test_login_successful(self):
         data = {"username": "user", "password": "password-123"}

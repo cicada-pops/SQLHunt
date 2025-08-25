@@ -72,9 +72,7 @@ const errorMessages: { [key: string]: string } = {
   'Passwords do not match': 'Пароли не совпадают',
   
   // Ошибки валидации email
-  'Enter a valid email address': 'Введите корректный email',
   'Enter a valid email address.': 'Введите корректный email',
-  'email': 'Введите корректный email',
   
   // Ошибки пустых полей
   'This field may not be blank': 'Это поле обязательно для заполнения',
@@ -83,8 +81,9 @@ const errorMessages: { [key: string]: string } = {
   'This field may not be blank., Enter a valid email address.': 'Заполните все поля',
   
   // Ошибки пароля
-  'Password is too short': 'Пароль слишком короткий',
-  'Password must be at least 8 characters': 'Пароль должен быть не менее 8 символов',
+  "This password is too short. It must contain at least 8 characters.": 'Пароль должен быть не менее 8 символов',
+  "This password is entirely numeric.": "Пароль не должен состоять только из цифр",
+  "This password is too common.": "Пароль слишком простой",
   
   // Системные ошибки
   'CSRF verification failed': 'Ошибка верификации CSRF',
@@ -93,7 +92,7 @@ const errorMessages: { [key: string]: string } = {
   'Network Error': 'Ошибка сети. Проверьте подключение',
   
   // Ошибки сброса пароля
-  'Email not found': 'Пользователь с такой почтой не найден',
+  'User with this email does not exist': 'Пользователь с такой почтой не найден',
   'Password reset email sent': 'Инструкции по сбросу пароля отправлены на вашу почту',
 };
 
