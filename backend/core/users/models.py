@@ -1,11 +1,12 @@
+from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
 
-class User(models.Model):
+class User(AbstractUser):
     id = models.AutoField(primary_key=True)
-    xp = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    xp = models.IntegerField(default=0, validators=[MinValueValidator(0, 'XP не может быть отрицательным')])
 
     def __str__(self):
         return f"User {str(self.pk)}"

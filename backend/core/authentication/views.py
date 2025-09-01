@@ -17,7 +17,6 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from core.users.models import User
 
 from .serializers import (
     PasswordResetConfirmSerializer,
@@ -163,22 +162,11 @@ def get_user_data(request):
     """
     Get current user data including experience
     """
-    try:
-        user_xp = User.objects.get(id=request.user.id)
-        return Response(
-            {
-                "id": request.user.id,
-                "username": request.user.username,
-                "email": request.user.email,
-                "experience": user_xp.xp,
-            }
-        )
-    except User.DoesNotExist:
-        return Response(
-            {
-                "id": request.user.id,
-                "username": request.user.username,
-                "email": request.user.email,
-                "experience": 0,
-            }
-        )
+    return Response(
+        {
+            "id": request.user.id,
+            "username": request.user.username,
+            "email": request.user.email,
+            "experience": request.user.xp
+        }
+    )

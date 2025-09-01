@@ -11,7 +11,7 @@ from core.celery_app import app
 from core.services.answer_checker import check_answer
 from core.services.schema_creator import get_schema
 from core.users.decorators import validate_case_access
-from core.users.models import Case as UserCase
+from core.users.models import Case as Case
 from core.users.models import User, UserProgress
 from core.users.tasks import execute_safe_sql
 
@@ -93,7 +93,7 @@ class SubmitAnswerView(APIView):
 
 class CaseListView(APIView):
     def get(self, request):
-        cases = UserCase.objects.using("users").values()
+        cases = Case.objects.using("users").values()
         return Response(cases)
 
 

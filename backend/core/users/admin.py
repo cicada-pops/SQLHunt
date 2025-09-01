@@ -1,12 +1,6 @@
 from django.contrib import admin
 
-from .models import AvailableTable, Case, User, UserProgress
-
-
-@admin.register(User)
-class UserAdmin(admin.ModelAdmin):
-    list_display = ("id", "xp")
-
+from .models import AvailableTable, Case, UserProgress
 
 @admin.register(UserProgress)
 class UserProgressAdmin(admin.ModelAdmin):

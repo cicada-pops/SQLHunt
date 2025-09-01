@@ -9,12 +9,12 @@ class UsersModelTest(TestCase):
     databases = {"users"}
 
     def test_valid_user(self):
-        user = User.objects.create(xp=10)
+        user = User.objects.create_user(username="testuser", password="testpass123", xp=10)
         user.full_clean()
         user.save()
 
     def test_invalid_negative_xp(self):
-        user = User(xp=-5)
+        user = User(username="testuser", password="testpass123", xp=-1)
         with self.assertRaises(ValidationError):
             user.full_clean()
 
@@ -82,7 +82,7 @@ class UserProgressModelTest(TestCase):
     databases = {"users"}
 
     def setUp(self):
-        self.user = User.objects.create(xp=10)
+        self.user = User.objects.create_user(username="testuser", password="testpass123", xp=10)
         self.case = Case.objects.create(
             title="Case 1",
             description="desc",

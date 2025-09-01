@@ -1,13 +1,10 @@
 from unittest.mock import MagicMock, patch
 
-from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from core.users.models import Case, User, UserProgress
-
-AuthUser = get_user_model()
 
 
 class UsersViewTests(APITestCase):
@@ -15,11 +12,10 @@ class UsersViewTests(APITestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.authuser = AuthUser.objects.create_user(
+        self.user = User.objects.create_user(
             username="testuser", password="testpass123"
         )
-        self.client.force_authenticate(user=self.authuser)
-        self.user = User.objects.get(pk=self.authuser.pk)
+        self.client.force_authenticate(user=self.user)
 
         self.case = Case.objects.using("users").create(
             title="A",

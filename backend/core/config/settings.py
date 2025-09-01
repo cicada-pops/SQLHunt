@@ -298,6 +298,7 @@ AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 )
+AUTH_USER_MODEL = 'users.User'
 
 SITE_ID = 1
 
@@ -352,3 +353,4 @@ DEFENDER_COOLOFF_TIME = 60
 # django-defender checks the lock *after* recording a failed attempt,
 # so the actual lock happens 1 attempt later than this number.
 DEFENDER_LOGIN_FAILURE_LIMIT = 3
+DEFENDER_STORE_ACCESS_ATTEMPTS = False

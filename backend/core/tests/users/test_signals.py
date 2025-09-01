@@ -1,4 +1,3 @@
-from django.contrib.auth.models import User as AuthUser
 from django.test import TransactionTestCase
 
 from core.users.models import Case, User, UserProgress
@@ -8,20 +7,9 @@ class UsersSignalTests(TransactionTestCase):
     databases = {"users"}
 
     def setUp(self):
-        self.auth_user = AuthUser.objects.create_user(
+        self.user = User.objects.create_user(
             username="test1", password="12345678"
         )
-        self.user = User.objects.using("users").get(id=self.auth_user.id)
-
-    def test_user_deleted_on_authuser_delete(self):
-        uid = self.auth_user.id
-        self.auth_user.delete()
-        self.assertFalse(User.objects.using("users").filter(id=uid).exists())
-
-    def test_user_created_on_authuser_creation(self):
-        user = AuthUser.objects.create_user(username="test2", password="12345678")
-        profile = User.objects.using("users").filter(id=user.id).first()
-        self.assertIsNotNone(profile)
 
     def test_create_userprogress_on_case_creation(self):
         case = Case.objects.using("users").create(
@@ -48,10 +36,9 @@ class UsersSignalTests(TransactionTestCase):
             answer="B",
             required_xp=0,
         )
-        new_auth_user = AuthUser.objects.create_user(
+        new_user = User.objects.create_user(
             username="test2", password="12345678"
         )
-        new_user = User.objects.using("users").get(id=new_auth_user.id)
 
         progress_exists = (
             UserProgress.objects.using("users")
